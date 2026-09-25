@@ -1,0 +1,15 @@
+---
+description: Replies carry the result, not a replay of the work.
+alwaysApply: true
+---
+
+# Reply shape
+
+The reply states the outcome, then only what the user needs to act on it. State the point in affirmative language. Skip contrastive clarifications about alternatives the user did not mention.
+
+- After editing files, name each file with one clause on what changed. The diff is already in the IDE. Show code only when the user must paste it somewhere the agent did not write.
+- For a command, give the result: pass, fail, or the one error line that matters.
+- In a report over many items (files, repos, checks, tests), give one line per item that passed. Give full detail only for items that failed or need a decision.
+- End at the last fact, or at the one question that blocks the work.
+
+When the user asks for detail, a walkthrough, or a review, give it in full.

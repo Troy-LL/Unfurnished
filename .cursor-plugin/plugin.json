@@ -1,8 +1,8 @@
 {
   "name": "unfurnished",
   "displayName": "Unfurnished",
-  "version": "1.3.0",
-  "description": "Workflow pack: spec docs, implement against the map, verify before you yield, pre-flight before you ship. Don't attach Claude furniture to Cursor.",
+  "version": "1.4.0",
+  "description": "Workflow pack: spec docs, implement against the map, verify before you yield. Don't attach Claude furniture to Cursor.",
   "author": {
     "name": "Troy"
   },
@@ -26,12 +26,13 @@
   "skills": "./.cursor/skills",
   "commands": [
     "./.cursor/commands/unfurnished.md",
-    "./.cursor/commands/voice.md",
-    "./.cursor/commands/keep.md"
+    "./.cursor/commands/voice.md"
   ],
   "hooks": "./.cursor/hooks.json",
   "rules": [
     "./.cursor/rules/yagni-bias.mdc",
+    "./.cursor/rules/comments-belong-in-docs.mdc",
+    "./.cursor/rules/reply-shape.mdc",
     "./.cursor/rules/unfurnished-bias.mdc",
     "./.cursor/rules/yagni.mdc",
     "./.cursor/rules/tdd.mdc",

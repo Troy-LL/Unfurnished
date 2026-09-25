@@ -24,25 +24,23 @@ Who can reach it is the split. Model-invoked: the agent may pull it when the tas
 | `grill` | Frontier interview when there is no checkable done-line. `/grill docs` then `sdd` |
 | `blueprint` | Whole-job kickoff. Not mid-task. Model plan only if they asked about cost |
 | `verify` | In-turn Definition-of-Done verification gate |
-| `pre-flight` | Pre-launch build, secret & deployment audit |
 | `ticket` | Local TDD pointer in `scratch/tickets/`. Not a GitHub/Linear wrap |
 | `evals` | Pipeline evals, traces, cost class for this repo. Do not pin a vendor model |
 | `write-skill` | Author a skill. Do not wrap `/create-skill` |
-| `after-compact` | Rehydrate when the chat looks compacted. `/keep off` to skip |
 
 **User-invoked**
 
 | Skill / knob | What |
 |--------------|------|
-| `/deepen` | List deepening candidates, wait, then grill the pick |
 | `/voice` | `plain` \| `ste` \| `off` |
-| `/keep` | Opt out of after-compact (`/keep off`). Default is on |
 
 **Always-on / opt-in priors**
 
 | Prior | What |
 |-------|------|
 | `yagni-bias` | Always-on, ~40 words |
+| `comments-belong-in-docs` | Always-on. Intent lives in the docs. A narration comment leaves with the edit |
+| `reply-shape` | Always-on. Outcome first, in affirmative language. Detail when they asked |
 | `unfurnished-bias` | Always-on kernel, not a slot map. Maximize natives, one slot, no extra probes. On unless `scratch/unfurnished-off` exists. Alongside other plugins. Owns the scratch and living-owner fences |
 | `fence.py` hook | Hard stop: blocks a full-file Write to a living durable owner and any `git add`/`commit` that would ship `scratch/`. Fails open |
 | `@yagni` | 7-rung ladder |

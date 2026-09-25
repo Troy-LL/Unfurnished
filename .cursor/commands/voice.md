@@ -1,3 +1,8 @@
+---
+name: voice
+description: Set the writing register for this chat. plain, ste, or off.
+---
+
 # /voice
 
 Set the writing register for this chat only. A new chat starts at default.

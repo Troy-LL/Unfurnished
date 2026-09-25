@@ -6,7 +6,7 @@ Status: Accepted
 
 Token-efficient packs compress prompts, force terse output, and trim context every turn. That scores the wrong loop. A wrong first attempt burns the window twice and the human's reread. Per-message golf looks cheap and pays on the retry.
 
-One-shot perfection is not the claim. A pack will miss. The bar is the first few attempts being the accepted ones, out of the box, without knowing slash names, on whatever model the host picked. A loop that only works after `/keep` or `/sdd-eng` fails this.
+One-shot perfection is not the claim. A pack will miss. The bar is the first few attempts being the accepted ones, out of the box, without knowing slash names, on whatever model the host picked. A loop that only works after a slash name fails this.
 
 Always-on lean can still win on a rename, a format pass, or a throwaway script. More upfront context can still lose when docs are stale or rules contradict. The thesis is a bias, not a law. A per-repo glossary looks like shared vocabulary; Evans's ubiquitous language lives in the model, the owners, and the conversation — a dictionary document gathers dust and then contradicts the files it was meant to align.
 

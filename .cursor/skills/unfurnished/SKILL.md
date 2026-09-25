@@ -56,8 +56,8 @@ When they pick Task: name the `subagent_type` from the `reference.md` Task matri
 | Kind | Use |
 |------|-----|
 | Skill | Workflow. `/<skill>` invokes it; there is no command twin (ADR 008). Host `.cursor/skills/` for new ones |
-| Command | Knob with state. `/voice`, `/keep`, `/unfurnished on` \| `off` |
-| Rule | Constraint. `@yagni`, `tdd`, `@blast-radius`. `yagni-bias` and `unfurnished-bias` are always-on |
+| Command | Knob with state. `/voice`, `/unfurnished on` \| `off` |
+| Rule | Constraint. `@yagni`, `tdd`, `@blast-radius`. `yagni-bias`, `comments-belong-in-docs`, `reply-shape`, and `unfurnished-bias` are always-on |
 | Hook | Hard fence. `.cursor/hooks/fence.py` (ADR 007) |
 
 A new add must name a gap Cursor does not ship, work on a project we have never seen, and beat a rewrite if a battle-tested upstream already exists. No router. No second marketplace. No stack skill. No review skill. `/sdd` and `/sdd-eng` are adopted from troysdd — edit upstream, then re-adopt.

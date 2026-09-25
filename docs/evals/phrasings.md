@@ -14,8 +14,8 @@ Plain words on purpose. Engineers do not say "occasion an owner."
 | the empty shelf text is wrong, fix it | sdd-eng |
 | fix the login bug, no idea which file, no test covers it | ticket |
 | are we done? make sure everything still runs | verify |
-| deploy check before i push this to prod | pre-flight |
-| the chat got summarized, where were we | after-compact |
+| deploy check before i push this to prod | none |
+| the chat got summarized, where were we | none |
 | build a test suite for our rag prompt outputs | evals |
 | make me a skill that does x | write-skill |
 | rename foo to bar in page.py | none |

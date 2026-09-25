@@ -21,20 +21,15 @@ SOFT_OFF_SLOTS = (
     "grill",
     "blueprint",
     "ticket",
-    "after-compact",
-    "pre-flight",
     "evals",
     "write-skill",
 )
 
 SKILLS = (
-    "after-compact",
     "blueprint",
     "unfurnished",
-    "deepen",
     "evals",
     "grill",
-    "pre-flight",
     "sdd",
     "sdd-eng",
     "ticket",
@@ -43,10 +38,12 @@ SKILLS = (
 )
 
 # Knobs only (ADR 008). A skill is already `/<skill>`.
-COMMANDS = ("unfurnished", "keep", "voice")
+COMMANDS = ("unfurnished", "voice")
 
 RULES = (
     "blast-radius.mdc",
+    "comments-belong-in-docs.mdc",
+    "reply-shape.mdc",
     "unfurnished-bias.mdc",
     "tdd.mdc",
     "yagni-bias.mdc",
@@ -65,17 +62,13 @@ def check(name: str, ok: bool, detail: str) -> dict:
 def run_checks(*, strict_install: bool) -> list[dict]:
     rows: list[dict] = []
     bias = text(CURSOR / "rules" / "unfurnished-bias.mdc")
-    after = text(CURSOR / "skills" / "after-compact" / "SKILL.md")
-    keep = text(CURSOR / "commands" / "keep.md")
     occasion = text(CURSOR / "skills" / "sdd" / "occasion.md")
     sdd_eng = text(CURSOR / "skills" / "sdd-eng" / "SKILL.md")
     sdd = text(CURSOR / "skills" / "sdd" / "SKILL.md")
     grill = text(CURSOR / "skills" / "grill" / "SKILL.md")
     blueprint = text(CURSOR / "skills" / "blueprint" / "SKILL.md")
     verify = text(CURSOR / "skills" / "verify" / "SKILL.md")
-    preflight = text(CURSOR / "skills" / "pre-flight" / "SKILL.md")
     cm = text(CURSOR / "skills" / "unfurnished" / "SKILL.md")
-    ref = text(CURSOR / "skills" / "unfurnished" / "reference.md")
     agents = text(ROOT / "AGENTS.md")
     adr006 = text(ROOT / "docs" / "decisions" / "006-kernel-not-slot-map.md")
     eval_md = text(ROOT / "docs" / "eval.md")
@@ -110,8 +103,7 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "kickoff" in blueprint.lower()
             and "file already on disk" in sdd_eng.lower()
             and "adr only when" in " ".join(sdd.split()).lower()
-            and "multi-file" in verify.lower()
-            and "ready to ship" in preflight.lower(),
+            and "multi-file" in verify.lower(),
             "skill descriptions still pull the slots the kernel dropped",
         )
     )
@@ -223,20 +215,6 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "extra-probe" in bias.lower()
             and "mcp" in bias.lower(),
             "always-on maximizes Cursor natives and skips extra probes and MCP clones",
-        )
-    )
-    rows.append(
-        check(
-            "after-compact-default-on",
-            "keep-off" in after and "If `scratch/keep-alive` is missing" not in after,
-            "after-compact arms unless keep-off",
-        )
-    )
-    rows.append(
-        check(
-            "keep-opt-out",
-            "keep-off" in keep and "Default is on" in keep,
-            "/keep off writes keep-off; default on",
         )
     )
     rows.append(
@@ -474,7 +452,7 @@ def run_checks(*, strict_install: bool) -> list[dict]:
         check(
             "plugin-hooks",
             plugin.get("hooks") == "./.cursor/hooks.json" and len(cmd_list) == len(COMMANDS),
-            "plugin ships the fence hook and only the three knobs",
+            "plugin ships the fence hook and only the two knobs",
         )
     )
     for name in COMMANDS:
@@ -487,7 +465,7 @@ def run_checks(*, strict_install: bool) -> list[dict]:
         rows.append(check(f"plugin-rule-{name}", needle in rule_list, needle))
 
     # Persona / description smoke: model-invoked skills have a use trigger.
-    for name in ("sdd", "sdd-eng", "after-compact", "verify", "grill"):
+    for name in ("sdd", "sdd-eng", "verify", "grill"):
         body = text(CURSOR / "skills" / name / "SKILL.md")
         rows.append(
             check(
@@ -497,15 +475,6 @@ def run_checks(*, strict_install: bool) -> list[dict]:
                 "frontmatter description present",
             )
         )
-
-    deepen = text(CURSOR / "skills" / "deepen" / "SKILL.md")
-    rows.append(
-        check(
-            "deepen-user-only",
-            "disable-model-invocation: true" in deepen,
-            "deepen stays user-invoked",
-        )
-    )
 
     cache_roots = [
         Path.home() / ".cursor" / "plugins" / "cache" / "troy-ll-unfurnished",
@@ -547,23 +516,6 @@ def run_checks(*, strict_install: bool) -> list[dict]:
                 f"stale={stale} path={detail} (warn only; re-import to clear)",
             )
         )
-
-    # README and reference agree on after-compact default
-    readme = text(ROOT / "README.md")
-    rows.append(
-        check(
-            "readme-after-compact",
-            "Opt out with `/keep off`" in readme or "keep off" in readme.lower(),
-            "README documents keep off as opt-out",
-        )
-    )
-    rows.append(
-        check(
-            "ref-after-compact",
-            "keep off" in ref.lower() or "Opt out" in ref,
-            "reference.md documents after-compact default",
-        )
-    )
     return rows
 
 

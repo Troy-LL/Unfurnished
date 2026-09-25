@@ -1,4 +1,5 @@
 ---
+description: Use when a small diff might break something the diff does not show. Prove it by running code.
 alwaysApply: false
 ---
 

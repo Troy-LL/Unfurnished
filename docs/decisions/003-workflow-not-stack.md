@@ -6,7 +6,7 @@ Status: Accepted
 
 We do not know the user's stack. We never will. A Supabase guide, a Stripe integration skill, or a Postgres optimization prompt assumes a specific project. On any other project, stack-bound tools are dead context—worse, wrong context that taxes the session window ([002-first-shot-efficiency.md](002-first-shot-efficiency.md)) for tools that are not there.
 
-What survives every project is the **workflow layer**: reviewing, planning, frontier questioning, red-green verification, adversarial auditing, pre-flight launch checks, compact rehydration, and intent alignment. That is the only layer Unfurnished ships.
+What survives every project is the **workflow layer**: reviewing, planning, frontier questioning, red-green verification, adversarial auditing, and intent alignment. That is the only layer Unfurnished ships.
 
 When community workflow skills are already battle-tested in the wild, rewriting them from scratch throws away edge-case fixes and isolates us from upstream maintenance. Extraction was designed as an escape hatch for salvaging good ideas from broken packs, not as a default intake strategy.
 
@@ -44,10 +44,10 @@ If an upstream fails our bar but contains an isolated durable workflow insight, 
 | Area | Workflow (In) | Stack (Out) |
 |---|---|---|
 | **Testing** | Language-agnostic red-green cycle (`tdd.mdc`); local TDD pointer (`ticket`) | Pytest / Vitest / Jest runner assertions or mock helpers |
-| **Verification & Deploy** | Compiler exit code, secret leaks, `.env.example` parity, anti-stub scan (`verify`, `pre-flight`) | Vercel CLI deploy scripts, AWS CDK stacks, Dockerfiles |
+| **Verification & Deploy** | Compiler exit code, anti-stub scan (`verify`) | Vercel CLI deploy scripts, AWS CDK stacks, Dockerfiles, secret scans, `.env.example` parity |
 | **Security & Audits** | Auth boundary checks, tenant isolation, race condition checks (Task `bugbot` / `security-review`; the pack's own review skill was retired in [008](008-no-command-twins.md)) | Supabase RLS policy templates, Prisma schema migrations |
 | **Evals** | Calibrated binary LLM-as-a-judge rubrics, trace-to-fixture distillation (`evals`) | Vendor SDK clients, LangChain pipeline scaffolds |
-| **Architecture** | Interface narrowing, surface surveys (`deepen`, `blast-radius.mdc`) | React state management patterns, Tailwind design systems |
+| **Architecture** | Interface narrowing (`blast-radius.mdc`) | React state management patterns, Tailwind design systems |
 
 ### 4. Inherited Intake Questions
 

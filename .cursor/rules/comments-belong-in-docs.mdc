@@ -1,0 +1,19 @@
+---
+description: Keep narration out of code. Explanations belong in the docs.
+alwaysApply: true
+---
+
+# Comments belong in the docs
+
+Unfurnished and the repo docs hold the why. Name the code so it reads without a caption.
+
+Put intent, design, and usage in the repo docs (`AGENTS.md`, `README`, design docs).
+
+On a line you are already editing, a narration comment leaves with the edit. Move a sentence to the docs only when it records intent the docs lack.
+
+A comment stays when it is one of these:
+
+- A license or generated-file header
+- A formatter or lint directive
+- A doc comment on a public API, or a comment a compiler, type checker, or build tool reads
+- One line naming an external constraint (dependency, platform, or protocol) and nothing else

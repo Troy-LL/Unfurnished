@@ -8,8 +8,8 @@ Eleven files in `.cursor/commands/` read "Follow the `<name>` skill." Cursor alr
 
 ## Decision
 
-We will ship a command only when it is a knob with state or arguments a skill cannot carry: `/unfurnished on|off`, `/voice`, `/keep`. Every skill is reachable as `/<skill>`; we will not add a command that restates it. Adversarial review is the `bugbot` and `security-review` Task types (or `/create-subagent`); we will not ship a review skill of our own.
+We will ship a command only when it is a knob with state or arguments a skill cannot carry: `/unfurnished on|off`, `/voice`. Every skill is reachable as `/<skill>`; we will not add a command that restates it. Adversarial review is the `bugbot` and `security-review` Task types (or `/create-subagent`); we will not ship a review skill of our own.
 
 ## Consequences
 
-`.cursor/commands/` holds three knobs. `thermonuclear` is deleted; `unfurnished-bias`, README, and `reference.md` point at Task. `pack-check.py` fails if a command file is a skill twin.
+`.cursor/commands/` holds two knobs. `thermonuclear` is deleted; `unfurnished-bias`, README, and `reference.md` point at Task. `pack-check.py` fails if a command file is a skill twin.

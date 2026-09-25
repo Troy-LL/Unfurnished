@@ -18,6 +18,8 @@ Do not `npx` a Claude pack to get these files. Do not copy `.cursor/` by hand un
 
 Catalog: [`.cursor-plugin/marketplace.json`](.cursor-plugin/marketplace.json) (what Customize import reads). Plugin: [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json).
 
+Official listing is a review at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish). Put the icon at `assets/logo.svg`. The manifest field is `"logo": "assets/logo.svg"` once that file is in the repo.
+
 ### `/unfurnished` if you want it
 
 | You type | What happens |
@@ -37,11 +39,9 @@ The test: could the agent usefully reach for this on its own? If yes, it is mode
 | `grill` | No checkable done-line, align / stress-test a plan. `/grill docs` then `sdd` |
 | `blueprint` | New project or whole-job kickoff. Not mid-task. No model picking unless they asked |
 | `verify` | Multi-file work about to be called done |
-| `pre-flight` | About to ship |
 | `ticket` | Feature/fix with no path or no named failing test. Local scratch pointer, not GitHub |
 | `evals` | Pipelines, traces into fixtures, cost class for this repo. Do not pin a vendor model |
 | `write-skill` | Authoring a skill |
-| `after-compact` | Chat was compacted. Opt out with `/keep off` |
 | `unfurnished` | They asked what this pack is, or pasted a job after `/unfurnished` |
 
 `tdd` is the same idea as a prior: feature or fix, not a throwaway script. Adversarial review is not a skill here: use the `bugbot` / `security-review` Task types Cursor ships ([008](docs/decisions/008-no-command-twins.md)).
@@ -52,9 +52,7 @@ These must not run unprompted. Every skill above is also `/<skill>`; there are n
 
 | Type this | What it does |
 |-----------|--------------|
-| `/deepen` | Skill, user-only. List deepening candidates, wait, grill the pick |
 | `/voice` | `plain` \| `ste` \| `off` |
-| `/keep` | Opt out of after-compact (`/keep off`). Default is on |
 | `/unfurnished off` / `on` | Mute or restore pack slots in this workspace |
 
 ## What actually blocks
@@ -63,7 +61,7 @@ Two fences are hooks, not sentences ([007](docs/decisions/007-hooks-for-hard-fen
 
 Product docs are **`sdd`**. Implementation is **`sdd-eng`**. Both ship in this pack, adopted from [Troy-LL/troysdd](https://github.com/Troy-LL/troysdd) (see `.cursor/skills/sdd/UPSTREAM.md`). You do not need a second plugin for them. If you already installed the troysdd plugin, turn one of them off so `/sdd` is not doubled.
 
-Priors in `.cursor/rules/`: `yagni-bias` (~40 words) and `unfurnished-bias` (kernel: natives, one slot, no extra probes — not a slot map). Both always on. `@yagni`, `tdd`, and `@blast-radius` attach when the task matches, or when you `@` them.
+Priors in `.cursor/rules/`: `yagni-bias` (~40 words), `comments-belong-in-docs`, `reply-shape`, and `unfurnished-bias` (kernel: natives, one slot, no extra probes — not a slot map). All four always on. `@yagni`, `tdd`, and `@blast-radius` attach when the task matches, or when you `@` them.
 
 ## Why it looks like this
 

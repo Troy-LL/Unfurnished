@@ -1,4 +1,5 @@
 ---
+description: Use when a change is about to grow a framework. Stop at the first rung that holds.
 alwaysApply: false
 ---
 
