@@ -18,7 +18,7 @@ Do not `npx` a Claude pack to get these files. Do not copy `.cursor/` by hand un
 
 Catalog: [`.cursor-plugin/marketplace.json`](.cursor-plugin/marketplace.json) (what Customize import reads). Plugin: [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json).
 
-Official listing is a review at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish). Put the icon at `assets/logo.svg`. The manifest field is `"logo": "assets/logo.svg"` once that file is in the repo.
+Official listing is a review at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish). The icon is [`assets/logo.png`](assets/logo.png).
 
 ### `/unfurnished` if you want it
 

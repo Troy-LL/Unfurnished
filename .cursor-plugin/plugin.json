@@ -3,6 +3,7 @@
   "displayName": "Unfurnished",
   "version": "1.4.0",
   "description": "Workflow pack: spec docs, implement against the map, verify before you yield. Don't attach Claude furniture to Cursor.",
+  "logo": "assets/logo.png",
   "author": {
     "name": "Troy"
   },
