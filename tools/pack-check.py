@@ -148,10 +148,11 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             "bias-post-compact-reload",
             "/summarize" in bias
             and "CONTEXT.md" in bias
+            and "GLOSSARY.md" in bias
             and "Job" in bias
             and "Read" in bias
             and "Done" in bias,
-            "always-on reloads AGENTS.md after compact; no CONTEXT.md; restate Task Job/Read/Done",
+            "always-on reloads AGENTS.md after compact; no CONTEXT.md/GLOSSARY.md; restate Task Job/Read/Done",
         )
     )
     ticket = text(CURSOR / "skills" / "ticket" / "SKILL.md")
@@ -166,7 +167,9 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "red-capable" in reference.lower()
             and "living owner" in grill.lower()
             and "CONTEXT.md" in grill
-            and "CONTEXT.md" in sdd,
+            and "GLOSSARY.md" in grill
+            and "CONTEXT.md" in sdd
+            and "GLOSSARY.md" in sdd,
             "thin failure/stop/red cues in ticket, verify, grill, sdd, reference",
         )
     )
@@ -177,8 +180,38 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             "with pstack" in readme.lower()
             and "mattpocock" in readme.lower()
             and "soft-off" in readme.lower()
-            and "we own" in readme.lower(),
+            and "we own" in readme.lower()
+            and "GLOSSARY.md" in readme,
             "README names coexistence with pstack / mattpocock (own / yield / soft-off)",
+        )
+    )
+    rows.append(
+        check(
+            "anti-glossary-glossary-md",
+            "GLOSSARY.md" in bias
+            and "GLOSSARY.md" in grill
+            and "GLOSSARY.md" in sdd
+            and "GLOSSARY.md" in reference
+            and "GLOSSARY.md" in readme,
+            "CONTEXT.md refusals also name GLOSSARY.md (Matt rename)",
+        )
+    )
+    rows.append(
+        check(
+            "harness-leaveout-cues",
+            all(
+                needle in readme and needle in reference
+                for needle in (
+                    "Projects",
+                    "/automate",
+                    "/autopilot",
+                    "/in-cloud",
+                    "/goal",
+                    "Custom Modes",
+                    "Agents Window",
+                )
+            ),
+            "leave-out + reference name Projects, /automate, /autopilot, /in-cloud, /goal, Custom Modes, Agents Window",
         )
     )
     cmd_dir = sorted(p.stem for p in (CURSOR / "commands").glob("*.md"))
@@ -736,9 +769,10 @@ class TestNameSeating(unittest.TestCase):
         self.assertIn("do not pull tdd", bias)
         self.assertIn("do not wrap", bias)
         self.assertIn("do not wrap", cm)
-        # Post-compact map reload (no CONTEXT.md wrap)
+        # Post-compact map reload (no CONTEXT.md / GLOSSARY.md wrap)
         self.assertIn("/summarize", bias)
         self.assertIn("context.md", bias)
+        self.assertIn("glossary.md", bias)
         self.assertIn("job", bias)
 
 

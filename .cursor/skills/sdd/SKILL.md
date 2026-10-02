@@ -15,7 +15,7 @@ Authoring. `/sdd`. Classify, then Read the matching file. Load stays on the prod
 
 If this workspace is the guidebook, Read `docs/files.md` only when the disclosed file is not enough.
 
-After compaction or `/summarize`, re-Read `AGENTS.md` then the owning file before seating names. Do not create `CONTEXT.md` as a glossary re-anchor — seat words in the living owner.
+After compaction or `/summarize`, re-Read `AGENTS.md` then the owning file before seating names. Do not create `CONTEXT.md` or `GLOSSARY.md` as a glossary re-anchor — seat words in the living owner.
 
 ## Steps
 

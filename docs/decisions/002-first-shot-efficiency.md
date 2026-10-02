@@ -27,6 +27,6 @@ This does not apply to cheap reversible work: one-line edits, renames, format/li
 
 ## Consequences
 
-`.cursor/` stays the small set we ship. New rules, commands, and skills must beat a blank project on few-first-shot rate, not on tokens in the first message. If two owners disagree, delete or fix the stale one — do not add a third file to "clarify." A per-repo `docs/glossary.md` is that third file: names live in the owner that owns the job (and in the code). A dictionary document drifts, goes unused, and invites a remake of design or architecture to "match" it.
+`.cursor/` stays the small set we ship. New rules, commands, and skills must beat a blank project on few-first-shot rate, not on tokens in the first message. If two owners disagree, delete or fix the stale one — do not add a third file to "clarify." A per-repo `docs/glossary.md` or root `GLOSSARY.md` / `CONTEXT.md` is that third file: names live in the owner that owns the job (and in the code). A dictionary document drifts, goes unused, and invites a remake of design or architecture to "match" it.
 
 Future audits ask: does this raise the probability the first few attempts are accepted, net of tax, on a cold install, on an arbitrary model? Cursor often hides token counts. Score **user turns until accepted** and **extra tool calls** (probes the job did not need). Do not wait on the usage dashboard.
