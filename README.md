@@ -1,5 +1,7 @@
 # Unfurnished
 
+![Empty living room as light lidar dots on a dark ground. The room looks empty. That is the point.](docs/brand/readme-hero-unfurnished-header.png)
+
 Cursor-native workflow pack. Don't attach Claude furniture to Cursor. The room looks empty. That is the point.
 
 This is not a token-golf optimizer. It points Agent at Plan, Ask, Debug, Task, Grep, Browser, and compact — the Cursor plan you already pay for — instead of cloning graph, memory, or router furniture. Skills fill gaps the IDE does not ship. Install it and talk; slash names are optional. Other plugins may run alongside. Not a Claude Code pack.
