@@ -3,7 +3,9 @@ name: verify
 description: >-
   Definition-of-Done in-turn verification gate. Use when completing a feature,
   refactor, bugfix, or multi-file change, or when the user says verify, /verify,
-  check done, or to prove the work is runnable before yielding turn.
+  check done, or to prove the work is runnable before yielding turn. Stop and
+  name the blocker when an applicable gate stays red after repair — do not claim
+  green on unrun or N/A-only gates.
 ---
 
 # Verify (Definition-of-Done Gate)
@@ -37,7 +39,11 @@ If any gate fails:
 - Re-run the failed gate (max 2 repair cycles).
 - If still failing, present the exact root cause and error output to the user.
 
-If a gate has nothing to run, mark it **N/A**. N/A is not a pass. Do not yield "green" if every applicable gate was N/A and you ran no command and no `ReadLints`.
+If a gate has nothing to run, mark it **N/A**. N/A is not a pass. Do not claim green if every applicable gate was N/A and you ran no command and no `ReadLints`.
+
+## Incomplete exit
+
+When an applicable gate stays red after the repair budget, or a dependency blocks the next gate: stop new feature edits, name the blocker and the remaining work, and yield. Do not claim green. Do not commit a known-red closeout as done.
 
 ## Done
 
