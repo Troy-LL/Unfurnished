@@ -16,11 +16,11 @@ Interview until the design tree is empty. Do not implement until the user confir
 
 ## Docs flag
 
-If the user said `/grill docs` or "grill docs": after they confirm, name which durable facts belong in which `/sdd` owner (README, AGENTS.md, architecture, design, eval, one ADR). Then stop. Do not write `CONTEXT.md`. Do not dual-write CLAUDE.md. Hand off to `/sdd`.
+If the user said `/grill docs` or "grill docs": after they confirm, name which durable facts belong in which `/sdd` owner (README, AGENTS.md, architecture, design, eval, one ADR). Then stop. Do not write `CONTEXT.md` or `GLOSSARY.md`. Do not dual-write CLAUDE.md. Hand off to `/sdd`.
 
 ## Living-owner re-seat
 
-After compaction or `/summarize`, if a domain word resurfaces: seat it in the matching living owner via `/sdd` (or `/sdd-eng` when the owner already holds the change). Do not mint `CONTEXT.md` or a glossary file as a re-anchor.
+After compaction or `/summarize`, if a domain word resurfaces: seat it in the matching living owner via `/sdd` (or `/sdd-eng` when the owner already holds the change). Do not mint `CONTEXT.md`, `GLOSSARY.md`, or a glossary file as a re-anchor.
 
 ## Rounds
 

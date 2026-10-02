@@ -82,27 +82,29 @@ If it assumes your stack, it belongs in your project rules instead.
 | Leave out | Cursor already ships / Where it belongs |
 |-----------|-----------------------------------------|
 | Graph indexes, codegraph, extra grep | Instant Grep, embeddings, Explore |
-| Session or memory plugins | Chat resume, rules, Automation Memories |
-| Auto-routers / named-agent orchestrators | Task, `/create-subagent`, Plan/Ask/Debug, best-of-n |
+| Session or memory plugins | Chat resume, rules, `/automate` + Automation Memories |
+| Auto-routers / named-agent orchestrators | Task, `/create-subagent`, Plan/Ask/Debug, best-of-n, Agents Window |
 | Claude dynamic workflows / JS orchestrator | Task, `/create-subagent`, `/best-of-n` ([006](docs/decisions/006-kernel-not-slot-map.md)) |
 | Command stubs that only point at a skill | `/<skill>` already invokes it ([008](docs/decisions/008-no-command-twins.md)) |
 | Hook frameworks, hook observability dashboards | `hooks.json`, `/create-hook` |
 | Checkpoint / rewind wrappers | Agent checkpoints, `/rewind` |
 | ccusage-style cost CLIs | Usage dashboard, statusline token % |
 | Caveman / rtk compact packs | Product compact, `/summarize` |
-| Output-style plugins | User Rules, Agent/Plan/Ask/Debug modes |
+| Output-style plugins | User Rules, Agent/Plan/Ask/Debug modes, Custom Modes |
 | Statusline theme packs | `cli-config.json` `statusLine` |
 | Permission MCP / safety-net plugins | Auto-review, `permissions.json`, sandbox |
 | Worktree desktop managers | `/worktree`, `/best-of-n`, `git worktree` |
 | Review-agent packs | Bugbot, Security Review |
-| Ralph overnight loops | `/loop`, Cloud Agents, Automations |
+| Ralph overnight loops | `/loop`, Cloud Agents, Automations, Projects |
+| Project-context / glossary furniture | Projects + living owners via `/sdd` — not `CONTEXT.md` / `GLOSSARY.md` |
 | A second skill marketplace | Plugins, [skills.sh](https://skills.sh/), cursor.directory |
-| Rule-authoring playbooks | `/create-rule`, Customize → Rules |
+| Rule-authoring playbooks | `/create-rule`, `/migrate-to-skills`, Customize → Rules |
 | Slash-command authoring playbooks | `/commands`, Customize → Commands |
 | Browser / Playwright verify MCP | Native Browser |
 | Canvas / design-to-code taste packs | `/canvas`, Design Mode |
 | Plan / `/autoplan` wrappers | Plan mode |
-| PR babysit loops | `/babysit` |
+| PR babysit loops | `/babysit`, `/autopilot` |
+| Cloud handoff / goal wraps | `/in-cloud`, `/goal` |
 | Stack skills, framework guides, service integrations | App-specific `.cursor/rules/`, `cursor-directory` |
 | Rewrites of battle-tested community skills | Adopt verbatim with upstream attribution ([003](docs/decisions/003-workflow-not-stack.md)); `/sdd` is the troysdd adopt |
 
@@ -116,7 +118,7 @@ Other plugins may run alongside. Unfurnished yields when another pack’s skill 
 | Peer | We own | We yield | Soft-off when |
 |------|--------|----------|---------------|
 | **pstack** / poteto-mode | Kernel priors, living-owner + scratch fences, local `ticket`, SDD map, thin verify | Their playbooks, model budgets, Task role fan-out, verification skills they attach | You want only pstack’s orchestra this workspace |
-| **mattpocock/skills** | Living owners via `/sdd` (no `CONTEXT.md`), local TDD pointer, grill → sdd handoff, native Task for review | Their tracker chain, `CONTEXT.md` glossary, `to-spec` / `to-tickets`, `code-review` when they invoke it | You want only their engineering chain this workspace |
+| **mattpocock/skills** | Living owners via `/sdd` (no `CONTEXT.md` / `GLOSSARY.md`), local TDD pointer, grill → sdd handoff, native Task for review | Their tracker chain, `CONTEXT.md` / `GLOSSARY.md` glossary, `to-spec` / `to-tickets`, `code-review` when they invoke it | You want only their engineering chain this workspace |
 
 Do not dual-write Unfurnished owners and a peer glossary. Do not wrap their tools. Do not add a review skill or command twin here ([008](docs/decisions/008-no-command-twins.md)).
 

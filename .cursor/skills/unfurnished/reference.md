@@ -57,14 +57,21 @@ Type the native. Do not wrap it.
 |-----------|------|
 | Plan / Ask / Debug | Design gate, lookup, or red-repro. Agent is the default loop. |
 | Task, `/create-subagent` | Fresh context, isolated implementer or reviewer |
+| Agents Window | Host multi-agent surface (parallel local/cloud, diffs/PRs) |
 | `/best-of-n`, `/worktree` | Parallel attempts; pick a winner |
-| `/loop`, Cloud Agents, Automations | Unattended or recurring |
+| `/loop`, Cloud Agents, Automations, `/automate` | Unattended, recurring, or triggered |
+| Projects, Project context | Long-horizon coordinator; seat facts in living owners — not `CONTEXT.md` / `GLOSSARY.md` |
+| Automation Memories | Durable automation memory under `/automate` |
+| `/autopilot` | PR babysit / feedback / CI loop |
+| `/in-cloud` | Cloud subagent |
+| `/goal` | Outcome tracking |
+| Custom Modes | Sticky skill-as-mode; do not clone as a pack orchestra |
 | Bugbot, Security Review | Review a diff out of this chat |
 | `/rewind`, checkpoints | Undo an agent turn |
 | `/summarize` | Compact the window |
 | Browser, `/canvas`, Design Mode | Click the app or a mock |
 | `/babysit` | Watch a PR |
-| `/create-skill`, `/create-rule`, `/commands` | Author a slot. Then `write-skill` if it is a workflow. |
+| `/create-skill`, `/create-rule`, `/migrate-to-skills`, `/commands` | Author a slot. Then `write-skill` if it is a workflow. |
 | `/create-hook`, `hooks.json` | Hard stop, not a rule |
 | Explore, Grep, Glob, Read | Find code. No graph plugin. |
 
@@ -121,11 +128,11 @@ Checkable stop/red language agents can verify — not a review skill.
 |--------|------------|
 | No red-capable command | Stop. List attempts. Ask. Do not hypothesize or write production code (`ticket` / `tdd`). |
 | Gate stays red / only N/A | Do not claim green (`verify`). Name the blocker and remaining work. |
-| After compact, map feels gone | Re-Read `AGENTS.md` then ≤2 owners. Re-state Task Job/Read/Done/Return/Stop. Do not mint `CONTEXT.md`. |
+| After compact, map feels gone | Re-Read `AGENTS.md` then ≤2 owners. Re-state Task Job/Read/Done/Return/Stop. Do not mint `CONTEXT.md` or `GLOSSARY.md`. |
 | Frontier empty + confirm | Grill is done. Hand off to `/sdd` or `/sdd-eng`; do not keep interviewing. |
 
 ## Leave out
 
-If Cursor ships it, do not wrap it: graph/codegraph, session or memory plugins, auto-routers, hook frameworks, checkpoint wrappers, cost CLIs, compact packs, output-style plugins, statusline themes, permission MCP, worktree managers, review-agent packs, Ralph loops, a second skill marketplace, rule or slash-command authoring playbooks, Browser/Playwright MCP, canvas taste packs, Plan wrappers, `/babysit` loops.
+If Cursor ships it, do not wrap it: graph/codegraph, session or memory plugins, auto-routers, hook frameworks, checkpoint wrappers, cost CLIs, compact packs, output-style plugins, statusline themes, permission MCP, worktree managers, review-agent packs, Ralph loops, Projects / Project context furniture, `/automate` + Automation Memories, `/autopilot`, `/in-cloud`, `/goal`, Custom Modes, Agents Window, a second skill marketplace, rule or slash-command authoring playbooks, Browser/Playwright MCP, canvas taste packs, Plan wrappers, `/babysit` loops.
 
 If it assumes a stack, leave it out: framework guides, service integrations, language-specific runners. If a battle-tested upstream already passes, adopt it; do not rewrite it.
