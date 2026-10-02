@@ -67,6 +67,13 @@ Product docs are **`sdd`**. Implementation is **`sdd-eng`**. Both ship in this p
 
 Priors in `.cursor/rules/`: `yagni-bias` (~40 words), `comments-belong-in-docs`, `reply-shape`, and `unfurnished-bias` (kernel: natives, one slot, no extra probes — not a slot map). All four always on. `@yagni`, `tdd`, and `@blast-radius` attach when the task matches, or when you `@` them.
 
+Two more habits ship without a slash — agent-side, not a user ritual:
+
+| Habit | What happens |
+|-------|--------------|
+| **Post-compact map reload** | Always-on `unfurnished-bias`: after compact or `/summarize`, the agent re-Reads `AGENTS.md`, then at most two owners for the job; re-states Task Job/Read/Done if spawning; does not create `CONTEXT.md` or `GLOSSARY.md`. |
+| **Failure-signal cues** | Thin stop / red / blocker language in `verify`, `ticket`, `grill`, and `sdd`: N/A is not a pass; stop when you cannot produce a red-capable command or a gate stays red; name the blocker. Not a review skill ([008](docs/decisions/008-no-command-twins.md)). |
+
 ## Why it looks like this
 
 Four decisions do most of the work.
