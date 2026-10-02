@@ -6,7 +6,8 @@ description: >-
   or they say grill / grill docs. Do not use for cheap reversible edits, after
   they already confirmed a shared understanding, or when they named a feature or
   fix against an existing map (that is sdd-eng). Do not use when the
-  user attached another pack's skill this turn.
+  user attached another pack's skill this turn. Stop when the frontier is empty
+  and they confirm — do not implement first.
 ---
 
 # Grill
@@ -16,6 +17,10 @@ Interview until the design tree is empty. Do not implement until the user confir
 ## Docs flag
 
 If the user said `/grill docs` or "grill docs": after they confirm, name which durable facts belong in which `/sdd` owner (README, AGENTS.md, architecture, design, eval, one ADR). Then stop. Do not write `CONTEXT.md`. Do not dual-write CLAUDE.md. Hand off to `/sdd`.
+
+## Living-owner re-seat
+
+After compaction or `/summarize`, if a domain word resurfaces: seat it in the matching living owner via `/sdd` (or `/sdd-eng` when the owner already holds the change). Do not mint `CONTEXT.md` or a glossary file as a re-anchor.
 
 ## Rounds
 

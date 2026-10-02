@@ -42,7 +42,7 @@ Who can reach it is the split. Model-invoked: the agent may pull it when the tas
 | `comments-belong-in-docs` | Always-on. Intent lives in the docs. A narration comment leaves with the edit |
 | `reply-shape` | Always-on. Outcome first, in affirmative language. Detail when they asked |
 | `unfurnished-bias` | Always-on kernel, not a slot map. Maximize natives, one slot, no extra probes. On unless `scratch/unfurnished-off` exists. Alongside other plugins. Owns the scratch and living-owner fences |
-| `fence.py` hook | Hard stop: blocks a full-file Write to a living durable owner and any `git add`/`commit` that would ship `scratch/`. Fails open |
+| `fence.py` hook | Hard stop: blocks a full-file Write to a living durable owner and any `git add`/`commit` that would ship `scratch/`. Invoked via `run-fence.sh` (`python3` then `python`). Runtime fails open; pack-check fails closed without either interpreter |
 | `@yagni` | 7-rung ladder |
 | `tdd` | Red-green on a feature or fix. Skip only if you say why |
 | `@blast-radius` | Said → cited → walked → ran |
@@ -112,6 +112,17 @@ Type extras:
 | `generalPurpose` | If they implement: failing test first when `tdd` is on. If they only survey: say so. |
 
 A blank "look at this repo" prompt is a miss. Improve it, then spawn.
+
+## Failure signals (thin cues)
+
+Checkable stop/red language agents can verify — not a review skill.
+
+| Signal | What to do |
+|--------|------------|
+| No red-capable command | Stop. List attempts. Ask. Do not hypothesize or write production code (`ticket` / `tdd`). |
+| Gate stays red / only N/A | Do not claim green (`verify`). Name the blocker and remaining work. |
+| After compact, map feels gone | Re-Read `AGENTS.md` then ≤2 owners. Re-state Task Job/Read/Done/Return/Stop. Do not mint `CONTEXT.md`. |
+| Frontier empty + confirm | Grill is done. Hand off to `/sdd` or `/sdd-eng`; do not keep interviewing. |
 
 ## Leave out
 

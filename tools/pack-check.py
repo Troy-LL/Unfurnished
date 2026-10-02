@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -118,15 +119,66 @@ def run_checks(*, strict_install: bool) -> list[dict]:
     )
     hooks = json.loads(text(CURSOR / "hooks.json") or "{}")
     hook_cmds = [h.get("command", "") for ev in (hooks.get("hooks") or {}).values() for h in ev]
+    fence_shim = CURSOR / "hooks" / "run-fence.sh"
+    fence_shim_text = text(fence_shim)
     rows.append(
         check(
             "fence-hook-wired",
             (CURSOR / "hooks" / "fence.py").is_file()
+            and fence_shim.is_file()
             and "preToolUse" in (hooks.get("hooks") or {})
             and "beforeShellExecution" in (hooks.get("hooks") or {})
-            and all("fence.py" in c for c in hook_cmds)
+            and all("run-fence.sh" in c for c in hook_cmds)
+            and all(c.strip().startswith("sh ") for c in hook_cmds)
+            and "python3" in fence_shim_text
+            and "command -v python" in fence_shim_text
             and "007-hooks-for-hard-fences.md" in agents,
-            "ADR 007: fence.py runs on Write and on git add/commit; 007 mapped",
+            "ADR 007: run-fence.sh (python3 then python) on Write and git add/commit; 007 mapped",
+        )
+    )
+    rows.append(
+        check(
+            "fence-python-on-path",
+            bool(shutil.which("python3") or shutil.which("python")),
+            "pack-check fail-closed: need python3 or python on PATH (hook still fail-opens at runtime)",
+        )
+    )
+    rows.append(
+        check(
+            "bias-post-compact-reload",
+            "/summarize" in bias
+            and "CONTEXT.md" in bias
+            and "Job" in bias
+            and "Read" in bias
+            and "Done" in bias,
+            "always-on reloads AGENTS.md after compact; no CONTEXT.md; restate Task Job/Read/Done",
+        )
+    )
+    ticket = text(CURSOR / "skills" / "ticket" / "SKILL.md")
+    reference = text(CURSOR / "skills" / "unfurnished" / "reference.md")
+    rows.append(
+        check(
+            "failure-signal-cues",
+            "cannot produce" in ticket.lower()
+            and "n/a is not a pass" in verify.lower()
+            and "do not claim green" in verify.lower()
+            and "blocker" in verify.lower()
+            and "red-capable" in reference.lower()
+            and "living owner" in grill.lower()
+            and "CONTEXT.md" in grill
+            and "CONTEXT.md" in sdd,
+            "thin failure/stop/red cues in ticket, verify, grill, sdd, reference",
+        )
+    )
+    readme = text(ROOT / "README.md")
+    rows.append(
+        check(
+            "coexistence-matrix",
+            "with pstack" in readme.lower()
+            and "mattpocock" in readme.lower()
+            and "soft-off" in readme.lower()
+            and "we own" in readme.lower(),
+            "README names coexistence with pstack / mattpocock (own / yield / soft-off)",
         )
     )
     cmd_dir = sorted(p.stem for p in (CURSOR / "commands").glob("*.md"))
@@ -684,16 +736,22 @@ class TestNameSeating(unittest.TestCase):
         self.assertIn("do not pull tdd", bias)
         self.assertIn("do not wrap", bias)
         self.assertIn("do not wrap", cm)
+        # Post-compact map reload (no CONTEXT.md wrap)
+        self.assertIn("/summarize", bias)
+        self.assertIn("context.md", bias)
+        self.assertIn("job", bias)
 
 
 class TestFence(unittest.TestCase):
     """ADR 007: the two hard fences run as hooks, not prose."""
 
     FENCE = CURSOR / "hooks" / "fence.py"
+    SHIM = CURSOR / "hooks" / "run-fence.sh"
 
-    def fence(self, payload: dict, cwd: Path = ROOT) -> dict:
+    def fence(self, payload: dict, cwd: Path = ROOT, *, via_shim: bool = False) -> dict:
+        cmd = ["sh", str(self.SHIM)] if via_shim else [sys.executable, str(self.FENCE)]
         proc = subprocess.run(
-            [sys.executable, str(self.FENCE)],
+            cmd,
             input=json.dumps(payload),
             capture_output=True,
             text=True,
@@ -752,6 +810,23 @@ class TestFence(unittest.TestCase):
             (repo / ".gitignore").write_text("scratch/\n", encoding="utf-8")
             self.assertEqual(self.shell("git add .", repo)["permission"], "allow")
             self.assertEqual(self.shell("git status", repo)["permission"], "allow")
+
+    def test_shim_resolves_python_and_denies_owner(self) -> None:
+        self.assertTrue(self.SHIM.is_file())
+        body = self.SHIM.read_text(encoding="utf-8")
+        self.assertIn("command -v python3", body)
+        self.assertLess(body.find("command -v python3"), body.rfind("command -v python"))
+        out = self.fence(
+            {
+                "hook_event_name": "preToolUse",
+                "tool_name": "Write",
+                "tool_input": {"path": str(ROOT / "AGENTS.md"), "contents": "x"},
+                "cwd": str(ROOT),
+                "workspace_roots": [str(ROOT)],
+            },
+            via_shim=True,
+        )
+        self.assertEqual(out["permission"], "deny")
 
 
 if __name__ == "__main__":

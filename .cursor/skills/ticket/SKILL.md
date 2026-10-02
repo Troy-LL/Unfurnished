@@ -4,7 +4,8 @@ description: >-
   Writes a local work item that points TDD at a path and a first red command.
   Use when a feature or fix has no pointer to the code to change or no named
   failing test. Do not use for one-line edits. Do not open GitHub or Linear
-  unless they named that tracker.
+  unless they named that tracker. Stop when you cannot produce a red-capable
+  Red command — name what blocked it; do not write production code first.
 ---
 
 # Ticket
@@ -25,7 +26,9 @@ Red: <command that must fail first>
 Status: open
 ```
 
-Done when: that file exists and `Red` is a real command.
+Done when: that file exists and `Red` is a real command that can catch this change's Done line (not a nearby unrelated failure).
+
+If you cannot produce that red-capable command: stop, list what you tried, and ask. Do not invent a green path around it.
 
 ## Red
 

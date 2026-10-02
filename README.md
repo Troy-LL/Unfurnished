@@ -57,7 +57,7 @@ These must not run unprompted. Every skill above is also `/<skill>`; there are n
 
 ## What actually blocks
 
-Two fences are hooks, not sentences ([007](docs/decisions/007-hooks-for-hard-fences.md)). `.cursor/hooks/fence.py` denies a full-file write to a living durable owner (patch in place instead) and any `git add` / `git commit` that would put `scratch/` in history. It needs `python` on PATH and fails open without it.
+Two fences are hooks, not sentences ([007](docs/decisions/007-hooks-for-hard-fences.md)). `.cursor/hooks/run-fence.sh` resolves `python3` then `python` and runs `fence.py`. It denies a full-file write to a living durable owner (patch in place instead) and any `git add` / `git commit` that would put `scratch/` in history. Runtime fails open if neither interpreter exists; `python tools/pack-check.py` fails closed so a dead fence does not pass CI.
 
 Product docs are **`sdd`**. Implementation is **`sdd-eng`**. Both ship in this pack, adopted from [Troy-LL/troysdd](https://github.com/Troy-LL/troysdd) (see `.cursor/skills/sdd/UPSTREAM.md`). You do not need a second plugin for them. If you already installed the troysdd plugin, turn one of them off so `/sdd` is not doubled.
 
@@ -105,6 +105,20 @@ If it assumes your stack, it belongs in your project rules instead.
 | PR babysit loops | `/babysit` |
 | Stack skills, framework guides, service integrations | App-specific `.cursor/rules/`, `cursor-directory` |
 | Rewrites of battle-tested community skills | Adopt verbatim with upstream attribution ([003](docs/decisions/003-workflow-not-stack.md)); `/sdd` is the troysdd adopt |
+
+</details>
+
+<details>
+<summary><strong>Coexistence</strong> — with pstack / with mattpocock skills</summary>
+
+Other plugins may run alongside. Unfurnished yields when another pack’s skill is attached this turn, and soft-off (`/unfurnished off`) mutes our slots when you want the other pack alone.
+
+| Peer | We own | We yield | Soft-off when |
+|------|--------|----------|---------------|
+| **pstack** / poteto-mode | Kernel priors, living-owner + scratch fences, local `ticket`, SDD map, thin verify | Their playbooks, model budgets, Task role fan-out, verification skills they attach | You want only pstack’s orchestra this workspace |
+| **mattpocock/skills** | Living owners via `/sdd` (no `CONTEXT.md`), local TDD pointer, grill → sdd handoff, native Task for review | Their tracker chain, `CONTEXT.md` glossary, `to-spec` / `to-tickets`, `code-review` when they invoke it | You want only their engineering chain this workspace |
+
+Do not dual-write Unfurnished owners and a peer glossary. Do not wrap their tools. Do not add a review skill or command twin here ([008](docs/decisions/008-no-command-twins.md)).
 
 </details>
 

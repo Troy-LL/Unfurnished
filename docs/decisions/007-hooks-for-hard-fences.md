@@ -8,7 +8,7 @@ Two rules in this pack must never be crossed: a living durable owner (README, AG
 
 ## Decision
 
-We will enforce the two hard fences with one command hook, `.cursor/hooks/fence.py`, wired in `.cursor/hooks.json` and shipped by `plugin.json`: `preToolUse` on `Write` denies a full-file write to a non-empty durable owner; `beforeShellExecution` denies `git add` / `git commit` that would put `scratch/` in history unless `scratch/` is gitignored. The hook fails open (no Python, crash, timeout → allow) so a product without Python is not bricked; the one-line prose fence stays in the kernel as the fallback. We will not add hooks for soft preferences.
+We will enforce the two hard fences with one command hook, `.cursor/hooks/fence.py`, invoked via `.cursor/hooks/run-fence.sh` (resolves `python3` then `python`) in `.cursor/hooks.json` and shipped by `plugin.json`: `preToolUse` on `Write` denies a full-file write to a non-empty durable owner; `beforeShellExecution` denies `git add` / `git commit` that would put `scratch/` in history unless `scratch/` is gitignored. The hook fails open (neither interpreter, crash, timeout → allow) so a product without Python is not bricked; `pack-check` fails closed if neither `python3` nor `python` is on PATH so common images do not silently ship a dead fence. The one-line prose fence stays in the kernel as the fallback. We will not add hooks for soft preferences.
 
 ## Consequences
 
