@@ -2,17 +2,19 @@
 
 ![Empty living room as light lidar dots on a dark ground. The room looks empty. That is the point.](docs/brand/readme-hero-unfurnished-header.png)
 
-Cursor-native workflow pack. Don't attach Claude furniture to Cursor. The room looks empty. That is the point.
+**A Cursor-native workflow pack of Agent skills, rules, and hooks.** Install it from the Cursor marketplace and keep chatting. The room looks empty. That is the point.
 
-This is not a token-golf optimizer. It points Agent at Plan, Ask, Debug, Task, Grep, Browser, and compact — the Cursor plan you already pay for — instead of cloning graph, memory, or router furniture. Skills fill gaps the IDE does not ship. Install it and talk; slash names are optional. Other plugins may run alongside. Not a Claude Code pack.
+Unfurnished leans on what Cursor already ships: Plan, Ask, Debug, Task, Grep, Browser, and compact. It adds a few skills for the gaps: product docs, implementing against them, kickoff, and verify before done. It does not clone Claude Code furniture like graph indexes, memory plugins, or routers.
 
-A few skills, a few knobs, a few short priors. Nothing that wraps something Cursor already ships. Stack-agnostic: same pack on a CLI, a SaaS, or a pipeline.
+- **For:** Cursor IDE and Cursor Agent users who want spec-driven docs, a verify gate, and fewer wasted first shots on any stack.
+- **Not for:** Claude Code, token-golf compression, or stack and framework guides.
+- **Works alongside:** pstack and mattpocock/skills. See **Coexistence** below.
 
-## Start here
+## Install
 
-1. Customize → Plugins → Import marketplace, paste GitHub `Troy-LL/Unfurnished`. Each push to this repo updates the install. Re-import if an older install still says Cursor-Maxxing or cursormax.
-2. Chat. The pack is on. Docs, features, kickoff, verify, and ship can pull themselves. A job with no checkable done-line gets an interview. You do not need `/unfurnished` first.
-3. **`/unfurnished off`** mutes pack slots in this workspace (`scratch/unfurnished-off`; do not commit). **`/unfurnished on`** turns them back on. Customize → disable plugin is the hard off. Other plugins may run alongside; use soft-off only when you want Unfurnished quiet.
+1. In Cursor, open **Customize → Plugins → Import marketplace** and paste `Troy-LL/Unfurnished`. Each push updates the install. Re-import if an old install still says Cursor-Maxxing or cursormax.
+2. Chat. The pack is on. Skills pull themselves when the task fits. You do not need to type `/unfurnished` first.
+3. To quiet it, type **`/unfurnished off`** (soft-off for this workspace, writes `scratch/unfurnished-off`; do not commit). **`/unfurnished on`** turns it back on. Disabling the plugin in Customize is the hard off.
 
 Open this repo only to edit the pack. If you already imported the plugin, do not also open this repo as the project — every skill loads twice.
 

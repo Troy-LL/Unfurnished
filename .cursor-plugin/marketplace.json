@@ -4,14 +4,14 @@
     "name": "Troy"
   },
   "metadata": {
-    "description": "Workflow pack: spec docs, implement against the map, verify before you yield. Don't attach Claude furniture to Cursor.",
+    "description": "Cursor-native workflow pack: Agent skills for spec docs, implement against the map, and verify before done. Don't attach Claude furniture to Cursor.",
     "version": "1.4.0"
   },
   "plugins": [
     {
       "name": "unfurnished",
       "source": ".",
-      "description": "Workflow pack: spec docs, implement against the map, verify before you yield. Don't attach Claude furniture to Cursor."
+      "description": "Cursor-native workflow pack: Agent skills for spec docs, implement against the map, and verify before done. Don't attach Claude furniture to Cursor."
     }
   ]
 }

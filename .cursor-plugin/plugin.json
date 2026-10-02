@@ -2,7 +2,7 @@
   "name": "unfurnished",
   "displayName": "Unfurnished",
   "version": "1.4.0",
-  "description": "Workflow pack: spec docs, implement against the map, verify before you yield. Don't attach Claude furniture to Cursor.",
+  "description": "Cursor-native workflow pack: Agent skills for spec docs, implement against the map, and verify before done. Don't attach Claude furniture to Cursor.",
   "logo": "assets/logo.png",
   "author": {
     "name": "Troy"
@@ -15,7 +15,11 @@
     "first-shot",
     "skills",
     "rules",
-    "sdd"
+    "sdd",
+    "cursor",
+    "cursor-plugin",
+    "agent-skills",
+    "workflow"
   ],
   "category": "developer-tools",
   "tags": [
