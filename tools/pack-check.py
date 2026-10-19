@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -54,6 +55,21 @@ RULES = (
 
 def text(p: Path) -> str:
     return p.read_text(encoding="utf-8") if p.exists() else ""
+
+
+_EVAL = None
+
+
+def eval_mod():
+    global _EVAL
+    if _EVAL is None:
+        spec = importlib.util.spec_from_file_location("eval_run", ROOT / "tools" / "eval-run.py")
+        if spec is None or spec.loader is None:
+            raise RuntimeError("tools/eval-run.py failed to load")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _EVAL = mod
+    return _EVAL
 
 
 def check(name: str, ok: bool, detail: str) -> dict:
@@ -585,6 +601,50 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             or "File on disk" in c_bias
         )
         detail = str(newest)
+    ev = eval_mod()
+    done = verify.split("## Done", 1)[-1]
+    rows.append(
+        check(
+            "verify-done-evidence",
+            "command and its exit code" in done.lower()
+            and "the path" in done.lower()
+            and "sha or pr" in done.lower()
+            and "native browser screenshot" in done.lower()
+            and "`not checked`" in done,
+            "verify Done names command+exit, path, SHA or PR, or native Browser screenshot, or says not checked",
+        )
+    )
+    rows.append(
+        check(
+            "agents-do-not-map",
+            ev.agents_scratch_fence(agents),
+            "AGENTS.md keeps the do-not-map line and has no scratch/ or scratch/tickets/ map bullet",
+        )
+    )
+    holes = text(ROOT / "docs" / "evals" / "holes.md")
+    hole_ids = [row["id"] for row in ev.hole_rows(holes)]
+    rows.append(
+        check(
+            "holes-human-keys",
+            "h-map-scratch" in hole_ids
+            and "h-claude" not in hole_ids
+            and "h-remake" not in hole_ids
+            and "a human writes" in holes.lower()
+            and "jev never scores holes" in holes.lower(),
+            "holes.md human keys include h-map-scratch; h-claude and h-remake are not rows",
+        )
+    )
+    ev_src = text(ROOT / "tools" / "eval-run.py")
+    rows.append(
+        check(
+            "claims-without-evidence",
+            "claims_without_evidence" in ev_src
+            and "browser_take_screenshot" in ev_src
+            and "Jev never scores holes" in ev_src
+            and "--holes" in ev_src,
+            "eval-run reports claims_without_evidence; --holes does not call Jev",
+        )
+    )
     if strict_install:
         rows.append(
             check(
@@ -861,6 +921,30 @@ class TestFence(unittest.TestCase):
             via_shim=True,
         )
         self.assertEqual(out["permission"], "deny")
+
+
+class TestAgentsDoNotMap(unittest.TestCase):
+    def test_live_keeps_do_not_map(self) -> None:
+        self.assertTrue(eval_mod().agents_scratch_fence(text(ROOT / "AGENTS.md")))
+
+    def test_fixture_map_bullet_goes_red(self) -> None:
+        live = text(ROOT / "AGENTS.md")
+        self.assertFalse(eval_mod().agents_scratch_fence(live + "\n- `scratch/` — thinking\n"))
+        self.assertFalse(eval_mod().agents_scratch_fence(live + "\n- `scratch/tickets/` — tickets\n"))
+
+    def test_fixture_missing_line_goes_red(self) -> None:
+        stripped = text(ROOT / "AGENTS.md").replace("Do not map it, even if they asked. ", "")
+        self.assertFalse(eval_mod().agents_scratch_fence(stripped))
+
+
+class TestEvalRunScorers(unittest.TestCase):
+    def test_suite(self) -> None:
+        proc = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "eval-run.py"), "unittest"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
 
 if __name__ == "__main__":

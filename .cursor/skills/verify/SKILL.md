@@ -48,3 +48,5 @@ When an applicable gate stays red after the repair budget, or a dependency block
 ## Done
 
 Verification is done when every applicable gate passed with a real run, and every other gate is marked N/A.
+
+Each done-claim names its proof in one clause: the command and its exit code, the path, the SHA or PR link, or the native Browser screenshot path. With no proof, that claim says `not checked`. Other lines are unaffected.
