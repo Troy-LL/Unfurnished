@@ -9,5 +9,8 @@
 - User turns until accepted:
 - Tool calls (total):
 - Extra tool calls (not Grep/Glob/Read or the named native):
+- screenshot_before_done: yes / no / N/A
+- dev_server_launches:
+- EADDRINUSE:
 - Tokens in / out (optional; skip if the dashboard is missing):
 - Notes (one line):
