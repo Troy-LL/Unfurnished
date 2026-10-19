@@ -699,6 +699,48 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             "trace schema records screenshot_before_done, dev_server_launches, and EADDRINUSE",
         )
     )
+    correction = (
+        "When a follow-up corrects the last turn, restate the corrected ask in one line, then redo."
+    )
+    rows.append(
+        check(
+            "bias-follow-up-correction",
+            bias.count(correction) == 1
+            and len(correction.replace(",", "").replace(".", "").split()) <= 20,
+            "kernel restates a corrected follow-up in one line (≤20 words), then redo",
+        )
+    )
+    task_prompt = reference.split("## Task prompt", 1)[-1].split("## ", 1)[0]
+    stop_at = task_prompt.find("**Stop**")
+    box_at = task_prompt.find("**Box**")
+    state_at = task_prompt.find("**State**")
+    fences_at = task_prompt.find("**Fences**")
+    task_lower = task_prompt.lower()
+    rows.append(
+        check(
+            "task-prompt-box-state-fences",
+            0 <= stop_at < box_at < state_at < fences_at
+            and "only when the parent sets a tool-call or time limit" in task_lower
+            and "at the limit, return what you have" in task_lower
+            and "only when prior work exists" in task_lower
+            and "branch, pr, or file already done" in task_lower
+            and "do-not and allowlist lines into the child prompt verbatim" in task_lower,
+            "Task prompt items 6–8 (Box, State, Fences) sit after Stop",
+        )
+    )
+    rows.append(
+        check(
+            "sdd-eng-seat-restated-decision",
+            "already-agreed product decision" in sdd_eng.lower()
+            and "seat it in the existing owner this turn" in sdd_eng.lower()
+            and "`docs/design.md`" in sdd_eng
+            and "`docs/architecture.md`" in sdd_eng
+            and "one ADR" in sdd_eng
+            and "a request to re-run something is not a decision" in sdd_eng.lower()
+            and "do not create `context.md` or `glossary.md`" in sdd_eng.lower(),
+            "sdd-eng seats a restated decision in design, architecture, or one ADR",
+        )
+    )
     if strict_install:
         rows.append(
             check(

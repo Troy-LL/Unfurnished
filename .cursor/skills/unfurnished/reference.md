@@ -105,6 +105,9 @@ Every spawn, in this order:
 3. **Done** — one checkable line.
 4. **Return** — the shape (table, paths, verdict). No transcript dump.
 5. **Stop** — do not spawn children. Do not commit unless the job says so. Parallel workers in the same tree: no git, no root manifests.
+6. **Box** — only when the parent sets a tool-call or time limit. At the limit, return what you have.
+7. **State** — only when prior work exists. One line naming the branch, PR, or file already done.
+8. **Fences** — copy the brief's do-not and allowlist lines into the child prompt verbatim.
 
 Type extras:
 
