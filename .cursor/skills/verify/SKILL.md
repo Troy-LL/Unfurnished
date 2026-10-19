@@ -32,10 +32,10 @@ Before declaring any task or feature complete, execute all 5 gates in-turn:
 4. **Gate 4 — Runtime & Server Health**:
    - Inspect active dev server output in terminal files for runtime crashes, unhandled promise rejections, or 500 errors.
    - If a test suite exists for the modified module, execute it via `Shell` to confirm green status.
-   - Before starting a server, check whether one already serves this project (desktop terminals, or tmux-backed shells on cloud). Reuse it.
-   - Do not start a second instance of the same server. Several different services are fine.
+   - Before any `npm run dev` or other server start, check whether a listen already serves this project (`ss -ltn`, curl, desktop terminals, or tmux-backed shells on cloud). Reuse it when it already serves this project.
+   - Do not start a second instance of the same server. Do not chain a server start after tests when one is already up. Several different services are fine.
    - When the change is rendered, the served page shows the changed string or a new build time.
-   - At yield, name the URL left running, or stop what you started.
+   - At yield, say `reused` or `stopped` and name the URL.
 
 5. **Gate 5 — Visual**:
    - When a change alters rendered output, open the page in the native Browser, take a screenshot, compare it to the reference if one exists, and list each visible delta. Then fix that delta or name it.
@@ -60,4 +60,4 @@ When an applicable gate stays red after the repair budget, or a dependency block
 
 Verification is done when every applicable gate passed with a real run, and every other gate is marked N/A.
 
-Each done-claim names its proof in one clause: the command and its exit code, the path, the SHA or PR link, or the native Browser screenshot path. With no proof, that claim says `not checked`. Other lines are unaffected.
+Each gate line in the yield names its proof in one clause: the command and its exit code, the path, the SHA or PR link, or the native Browser screenshot path. With no proof, that gate line says `not checked`.
