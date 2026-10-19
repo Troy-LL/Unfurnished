@@ -645,6 +645,60 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             "eval-run reports claims_without_evidence; --holes does not call Jev",
         )
     )
+    trace_fixture = text(ROOT / "docs" / "evals" / "trace-fixture.md")
+    verify_lower = verify.lower()
+    rows.append(
+        check(
+            "verify-gate-5-visual",
+            "gate 5 — visual" in verify_lower
+            and "gate 1 —" in verify_lower
+            and "gate 4 —" in verify_lower
+            and "native browser" in verify_lower
+            and "start, middle, and end" in verify_lower
+            and "logic-only change" in verify_lower
+            and "`not checked`" in verify
+            and "animation should match a reference" in verify_lower
+            and "one port" not in verify_lower
+            and "playwright" not in verify_lower
+            and "beforeshellexecution" not in verify_lower.replace(" ", ""),
+            "Gate 5 uses the native Browser; Gates 1–4 keep their numbers",
+        )
+    )
+    rows.append(
+        check(
+            "verify-gate-4-lifecycle",
+            "already serves this project" in verify_lower
+            and "second instance of the same server" in verify_lower
+            and "several different services" in verify_lower
+            and "changed string or a new build time" in verify_lower
+            and "name the url left running, or stop what you started" in verify_lower
+            and "tmux-backed shells on cloud" in verify_lower
+            and "one port" not in verify_lower,
+            "Gate 4 reuses this project's server and names the URL or stops it",
+        )
+    )
+    rows.append(
+        check(
+            "phrasing-card-animation",
+            "| the card animation still looks wrong, match the reference | verify |" in phrasings,
+            "phrasings routes the card-animation ask to verify",
+        )
+    )
+    rows.append(
+        check(
+            "visual-server-fields",
+            "screenshot_before_done" in ev_src
+            and "dev_server_launches" in ev_src
+            and "EADDRINUSE" in ev_src
+            and "left_running" not in ev.trace_field_names()
+            and "- left_running:" not in ev_src
+            and "screenshot_before_done" in trace_fixture
+            and "dev_server_launches" in trace_fixture
+            and "EADDRINUSE" in trace_fixture
+            and "left_running" not in trace_fixture,
+            "trace schema records screenshot_before_done, dev_server_launches, and EADDRINUSE",
+        )
+    )
     if strict_install:
         rows.append(
             check(

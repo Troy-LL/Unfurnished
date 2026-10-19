@@ -3,18 +3,19 @@ name: verify
 description: >-
   Definition-of-Done in-turn verification gate. Use when completing a feature,
   refactor, bugfix, or multi-file change, or when the user says verify, /verify,
-  check done, or to prove the work is runnable before yielding turn. Stop and
+  check done, or to prove the work is runnable before yielding turn, or when
+  rendered output or an animation should match a reference. Stop and
   name the blocker when an applicable gate stays red after repair — do not claim
   green on unrun or N/A-only gates.
 ---
 
 # Verify (Definition-of-Done Gate)
 
-Autonomous pre-yield verification across lints, typechecks, stubs, and runtime health.
+Autonomous pre-yield verification across lints, typechecks, stubs, runtime health, and rendered output.
 
-## 4-Gate Verification Process
+## 5-Gate Verification Process
 
-Before declaring any task or feature complete, execute all 4 gates in-turn:
+Before declaring any task or feature complete, execute all 5 gates in-turn:
 
 1. **Gate 1 — Linter Cleanliness**:
    - Run `ReadLints` on all newly created or edited files.
@@ -31,6 +32,16 @@ Before declaring any task or feature complete, execute all 4 gates in-turn:
 4. **Gate 4 — Runtime & Server Health**:
    - Inspect active dev server output in terminal files for runtime crashes, unhandled promise rejections, or 500 errors.
    - If a test suite exists for the modified module, execute it via `Shell` to confirm green status.
+   - Before starting a server, check whether one already serves this project (desktop terminals, or tmux-backed shells on cloud). Reuse it.
+   - Do not start a second instance of the same server. Several different services are fine.
+   - When the change is rendered, the served page shows the changed string or a new build time.
+   - At yield, name the URL left running, or stop what you started.
+
+5. **Gate 5 — Visual**:
+   - When a change alters rendered output, open the page in the native Browser, take a screenshot, compare it to the reference if one exists, and list each visible delta. Then fix that delta or name it.
+   - When animation code changed, check the start, middle, and end frames.
+   - Mark this gate **N/A** with one reason, for example "logic-only change".
+   - When the native Browser cannot reach the page, say `not checked`.
 
 ## Bounded Repair Loop
 

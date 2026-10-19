@@ -14,6 +14,7 @@ Plain words on purpose. Engineers do not say "occasion an owner."
 | the empty shelf text is wrong, fix it | sdd-eng |
 | fix the login bug, no idea which file, no test covers it | ticket |
 | are we done? make sure everything still runs | verify |
+| the card animation still looks wrong, match the reference | verify |
 | deploy check before i push this to prod | none |
 | the chat got summarized, where were we | none |
 | build a test suite for our rag prompt outputs | evals |

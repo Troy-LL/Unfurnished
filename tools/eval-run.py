@@ -8,7 +8,8 @@
 Each dummy run: copy the dummy to a temp dir, run the agent with this repo as --plugin-dir,
 run the dummy's Red command, check the design-keep rule, write one trace file from
 docs/evals/trace-fixture.md. Turns are 1 by construction (one prompt); tool calls are
-counted from stream-json events. claims_without_evidence is report-only.
+counted from stream-json events. claims_without_evidence, screenshot_before_done,
+dev_server_launches, and the EADDRINUSE count are report-only.
 Jev never scores holes.
 """
 from __future__ import annotations
@@ -47,6 +48,24 @@ class Call(NamedTuple):
     command: str = ""
     exit_code: int | None = None
     output: str = ""
+    path: str = ""
+
+
+_UI_FILE = re.compile(r"\.(?:css|tsx|html|svg)$", re.I)
+_DEV_SERVER = re.compile(
+    r"(?:^|[;&|`(]\s*)(?:"
+    r"(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+(?:dev|start)\b"
+    r"|npx\s+(?:next|vite|nuxt|astro)\b"
+    r"|(?:next|nuxt|astro)\s+dev\b"
+    r"|vite(?:\s+dev)?(?=\s|$)"
+    r"|(?:flask|gunicorn|hypercorn)\s+run\b"
+    r"|uvicorn\b"
+    r"|python(?:3)?\s+-m\s+http\.server\b"
+    r"|php\s+-S\b"
+    r"|rails\s+s(?:erver)?\b"
+    r")",
+    re.I | re.M,
+)
 
 
 def _norm_tool(name: str) -> str:
@@ -90,6 +109,47 @@ def _qualifying(call: Call) -> bool:
 
 def _is_write(call: Call) -> bool:
     return _norm_tool(call.name) in {"write", "strreplace"}
+
+
+def _is_browser_screenshot(call: Call) -> bool:
+    return _norm_tool(call.name) == "browsertakescreenshot"
+
+
+def _ui_edit(call: Call) -> bool:
+    if not _is_write(call):
+        return False
+    clean = call.path.split("?", 1)[0].replace("\\", "/").rstrip("/")
+    return bool(_UI_FILE.search(clean))
+
+
+def screenshot_before_done(calls: list[Call]) -> str:
+    """yes when a native Browser screenshot follows the last .css/.tsx/.html/.svg edit; else no. N/A if none of those changed."""
+    last_ui = -1
+    for i, call in enumerate(calls):
+        if _ui_edit(call):
+            last_ui = i
+    if last_ui < 0:
+        return "N/A"
+    if any(_is_browser_screenshot(call) for call in calls[last_ui + 1:]):
+        return "yes"
+    return "no"
+
+
+def dev_server_launches(calls: list[Call]) -> int:
+    """How many dev-server start commands appear in Shell calls."""
+    return sum(
+        len(_DEV_SERVER.findall(call.command))
+        for call in calls
+        if _norm_tool(call.name) == "shell"
+    )
+
+
+def eaddrinuse_count(calls: list[Call]) -> int:
+    return sum(call.output.count("EADDRINUSE") for call in calls if _norm_tool(call.name) == "shell")
+
+
+def trace_field_names() -> tuple[str, ...]:
+    return ("screenshot_before_done", "dev_server_launches", "EADDRINUSE")
 
 
 def claims_without_evidence(message: str, calls: list[Call]) -> int:
@@ -189,17 +249,19 @@ def _as_int(value: object) -> int | None:
 
 def _call_from_mapping(name: str, args: object, result: object) -> Call:
     command = ""
+    path = ""
     if isinstance(args, dict):
         command = str(args.get("command") or args.get("cmd") or "")
+        path = str(args.get("path") or args.get("file_path") or args.get("filePath") or "")
     exit_code = None
-    output = ""
+    chunks: list[str] = []
     if isinstance(result, dict):
         exit_code = _as_int(result.get("exitCode", result.get("exit_code", result.get("code"))))
-        for key in ("stdout", "output", "content"):
-            if isinstance(result.get(key), str):
-                output = result[key]
-                break
-    return Call(name=name, command=command, exit_code=exit_code, output=output)
+        for key in ("stdout", "output", "content", "stderr"):
+            value = result.get(key)
+            if isinstance(value, str) and value:
+                chunks.append(value)
+    return Call(name=name, command=command, exit_code=exit_code, output="\n".join(chunks), path=path)
 
 
 def call_from_tool_event(event: dict) -> Call | None:
@@ -341,7 +403,11 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             success = subprocess.run(red.group(1), shell=True, cwd=ws).returncode == 0
             after = (ws / "docs" / "design.md").read_text(encoding="utf-8") if design_src.is_file() else ""
             kept = design_kept(before, after, "Coming soon.") if before else True
-            bare_claims = claims_without_evidence(final_message(events), calls_from_events(events))
+            parsed = calls_from_events(events)
+            bare_claims = claims_without_evidence(final_message(events), parsed)
+            shot = screenshot_before_done(parsed)
+            launches = dev_server_launches(parsed)
+            busy = eaddrinuse_count(parsed)
         stamp = dt.date.today().isoformat()
         trace = TRACES / f"{stamp}-{name}-{arm}-{i}.md"
         trace.write_text(
@@ -352,13 +418,17 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             "- User turns until accepted: 1 (headless, one prompt)\n"
             f"- Tool calls (total): {len(calls)}\n- Extra tool calls (not Grep/Glob/Read or the named native): {len(extra)}\n"
             f"- claims_without_evidence: {bare_claims}\n"
+            f"- screenshot_before_done: {shot}\n"
+            f"- dev_server_launches: {launches}\n"
+            f"- EADDRINUSE: {busy}\n"
             "- Tokens in / out (optional; skip if the dashboard is missing): skipped\n"
             f"- Notes (one line): headless via tools/eval-run.py; extra={[c[0] for c in extra][:8]}\n",
             encoding="utf-8",
         )
         print(
             f"{trace.name}: success={success} kept={kept} calls={len(calls)} "
-            f"extra={len(extra)} claims_without_evidence={bare_claims}"
+            f"extra={len(extra)} claims_without_evidence={bare_claims} "
+            f"screenshot_before_done={shot} dev_server_launches={launches} EADDRINUSE={busy}"
         )
 
 
@@ -528,6 +598,70 @@ class TestAgentsScratchFence(unittest.TestCase):
         self.assertFalse(agents_scratch_fence(stripped))
         self.assertTrue(agents_scratch_fence("Keep the do-not-map line.\n"))
         self.assertFalse(agents_scratch_fence("Keep the do-not-map line.\n* `scratch/tickets/` — x\n"))
+
+
+class TestVisualAndServerFields(unittest.TestCase):
+    def test_screenshot_before_done_follows_ui_edits(self) -> None:
+        css = Call("Write", path="src/card.css")
+        shot = Call("browser_take_screenshot", output="/tmp/card.png")
+        self.assertEqual(screenshot_before_done([css, shot]), "yes")
+        self.assertEqual(screenshot_before_done([shot, css]), "no")
+        self.assertEqual(screenshot_before_done([css]), "no")
+        self.assertEqual(screenshot_before_done([Call("Write", path="page.py"), shot]), "N/A")
+        self.assertEqual(screenshot_before_done([Call("StrReplace", path="web/icon.svg"), shot]), "yes")
+        self.assertEqual(screenshot_before_done([Call("Write", path="App.tsx")]), "no")
+        self.assertEqual(screenshot_before_done([Call("Write", path="index.html"), shot]), "yes")
+        generic = Call("screenshot", output="/tmp/card.png")
+        self.assertEqual(screenshot_before_done([css, generic]), "no")
+
+    def test_dev_server_launches_and_eaddrinuse(self) -> None:
+        one = [Call("Shell", "npm run dev")]
+        self.assertEqual(dev_server_launches(one), 1)
+        self.assertEqual(eaddrinuse_count(one), 0)
+        twice = [Call("Shell", "npm run dev"), Call("Shell", "pnpm dev")]
+        self.assertEqual(dev_server_launches(twice), 2)
+        chained = [Call("Shell", "yarn dev && bun run dev")]
+        self.assertEqual(dev_server_launches(chained), 2)
+        tests = [Call("Shell", "python -m unittest test_page.py", 0, "ok")]
+        self.assertEqual(dev_server_launches(tests), 0)
+        self.assertEqual(dev_server_launches([Call("Shell", "cat vite.config.ts")]), 0)
+        busy = [Call("Shell", "npm start", 1, "Error: listen EADDRINUSE: address already in use")]
+        self.assertEqual(dev_server_launches(busy), 1)
+        self.assertEqual(eaddrinuse_count(busy), 1)
+        echoed = [Call("Shell", "vite", 1, "EADDRINUSE\nEADDRINUSE")]
+        self.assertEqual(dev_server_launches(echoed), 1)
+        self.assertEqual(eaddrinuse_count(echoed), 2)
+        self.assertNotIn("left_running", trace_field_names())
+
+    def test_stream_events_feed_both_fields(self) -> None:
+        events = [
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "tool_call": {
+                    "writeToolCall": {"args": {"path": "src/Card.tsx"}, "result": {}},
+                },
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "tool_call": {
+                    "shellToolCall": {
+                        "args": {"command": "npm run dev"},
+                        "result": {"exitCode": 1, "stderr": "Error: listen EADDRINUSE"},
+                    }
+                },
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "tool_call": {"browserTakeScreenshotToolCall": {"args": {}, "result": {"output": "/tmp/a.png"}}},
+            },
+        ]
+        calls = calls_from_events(events)
+        self.assertEqual(screenshot_before_done(calls), "yes")
+        self.assertEqual(dev_server_launches(calls), 1)
+        self.assertEqual(eaddrinuse_count(calls), 1)
 
 
 class TestStreamParse(unittest.TestCase):
