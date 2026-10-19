@@ -699,6 +699,60 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             "trace schema records screenshot_before_done, dev_server_launches, and EADDRINUSE",
         )
     )
+    rows.append(
+        check(
+            "trace-tags-and-soft-off",
+            all(
+                name in trace_fixture
+                for name in (
+                    "claims_without_evidence",
+                    "correction_turns",
+                    "final_reply_chars",
+                    "pack_loaded",
+                    "pack_version",
+                    "unfurnished-bias",
+                    "unfurnished-off",
+                    "unknown",
+                    "soft-off",
+                )
+            )
+            and "choices=ARMS" in ev_src
+            and 'ARMS = ("routed", "always-cheap", "always-frontier", "soft-off")' in ev_src
+            and "scratch/unfurnished-off" in ev_src
+            and "- correction_turns:" in ev_src
+            and "- final_reply_chars:" in ev_src
+            and "- pack_loaded:" in ev_src
+            and "- pack_version:" in ev_src,
+            "trace fixture records the field tags; soft-off is an arm beside the existing three",
+        )
+    )
+    rows.append(
+        check(
+            "eval-sample-size",
+            "±10" in eval_md
+            and "0.46" in eval_md
+            and "n = 100" in eval_md
+            and "fewer than 20 events" in eval_md
+            and "globalStorage" in eval_md
+            and "Troy-local" in eval_md
+            and "state.vscdb" in eval_md
+            and not (ROOT / "tools" / "field-scrape.py").exists(),
+            "eval.md states the ±10 point margin and keeps scrape off the pack",
+        )
+    )
+    adr009 = text(ROOT / "docs" / "decisions" / "009-evidence-and-visual-gate.md")
+    rows.append(
+        check(
+            "adr-009-evidence-visual",
+            "Status: Accepted" in adr009
+            and "We will" in adr009
+            and "done-claim" in adr009.lower()
+            and "Gate 5" in adr009
+            and "native Browser" in adr009
+            and "009-evidence-and-visual-gate.md" in agents,
+            "ADR 009 records evidence on done-claims and Gate 5, and the map points at it",
+        )
+    )
     correction = (
         "When a follow-up corrects the last turn, restate the corrected ask in one line, then redo."
     )
