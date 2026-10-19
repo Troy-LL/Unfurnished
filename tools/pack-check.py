@@ -671,10 +671,13 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "logic-only change" in verify_lower
             and "`not checked`" in verify
             and "animation should match a reference" in verify_lower
+            and "changed vs before" in verify_lower
+            and "before→after" in verify
+            and "screenshot path alone is not enough" in verify_lower
             and "one port" not in verify_lower
             and "playwright" not in verify_lower
             and "beforeshellexecution" not in verify_lower.replace(" ", ""),
-            "Gate 5 uses the native Browser; Gates 1–4 keep their numbers",
+            "Gate 5 lists before→after deltas; screenshot path alone is not enough",
         )
     )
     rows.append(
@@ -771,8 +774,26 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "done-claim" in adr009.lower()
             and "Gate 5" in adr009
             and "native Browser" in adr009
+            and "changed vs before" in adr009.lower()
+            and "before→after" in adr009
+            and "screenshot path alone is not enough" in adr009.lower()
             and "009-evidence-and-visual-gate.md" in agents,
-            "ADR 009 records evidence on done-claims and Gate 5, and the map points at it",
+            "ADR 009 records evidence on done-claims and Gate 5 before→after deltas",
+        )
+    )
+    rows.append(
+        check(
+            "eval-soft-off-host-list",
+            "soft-off on the host" in eval_md.lower()
+            and "may still" in eval_md.lower()
+            and "list" in eval_md.lower()
+            and "pack_read" in eval_md
+            and "does not invent a host api" in eval_md.lower()
+            and "answer keys stay out" in eval_md.lower()
+            and "EVAL-TASK.md" in eval_md
+            and "seed_hole_workspace" in ev_src
+            and "_strip_eval_keys" in ev_src,
+            "eval.md documents host skill listing and answer-key isolation; harness strips keys",
         )
     )
     correction = (

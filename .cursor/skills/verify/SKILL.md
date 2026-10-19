@@ -38,7 +38,8 @@ Before declaring any task or feature complete, execute all 5 gates in-turn:
    - At yield, say `reused` or `stopped` and name the URL.
 
 5. **Gate 5 — Visual**:
-   - When a change alters rendered output, open the page in the native Browser, take a screenshot, compare it to the reference if one exists, and list each visible delta. Then fix that delta or name it.
+   - When a change alters rendered output, open the page in the native Browser, take a screenshot, compare it to the reference if one exists, and list each visible delta as changed vs before (before→after). A screenshot path alone is not enough.
+   - At yield, list those before→after deltas (or say none). Then fix each named delta or leave it named.
    - When animation code changed, check the start, middle, and end frames.
    - Mark this gate **N/A** with one reason, for example "logic-only change".
    - When the native Browser cannot reach the page, say `not checked`.
