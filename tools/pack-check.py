@@ -709,6 +709,7 @@ def run_checks(*, strict_install: bool) -> list[dict]:
                     "correction_turns",
                     "final_reply_chars",
                     "pack_loaded",
+                    "pack_read",
                     "pack_version",
                     "unfurnished-bias",
                     "unfurnished-off",
@@ -722,7 +723,11 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "- correction_turns:" in ev_src
             and "- final_reply_chars:" in ev_src
             and "- pack_loaded:" in ev_src
-            and "- pack_version:" in ev_src,
+            and "- pack_read:" in ev_src
+            and "- pack_version:" in ev_src
+            and "materialize_plugin" in ev_src
+            and "editToolCall" in ev_src
+            and "pack_read" in ev_src,
             "trace fixture records the field tags; soft-off is an arm beside the existing three",
         )
     )

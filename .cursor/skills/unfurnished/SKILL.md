@@ -16,6 +16,7 @@ This pack is a small Cursor-native kit. It is not a Claude Code pack and not a p
 
 ## Load
 
+0. If `scratch/unfurnished-off` or `scratch/cursormax-off` exists: report soft-off in one line. Do not Intake, Offer, or pull pack slots. Stop.
 1. If `docs/decisions/001-native-first.md` exists in the workspace, read `AGENTS.md`, then at most two owners. Cite paths. Do not paste.
 2. Otherwise read `reference.md` beside this skill. That is the portable constitution and catalog.
 3. If the host has `AGENTS.md`, still load it as the project map (at most two owners). Do not treat this pack as a second map.

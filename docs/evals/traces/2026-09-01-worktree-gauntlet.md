@@ -34,7 +34,7 @@ None on the deterministic probes. Live Agent sessions were **not** run in the wo
 
 1. **Live t1-nook** — still need a real Agent turn that patches `page.py` + `docs/design.md` without blank-replace; count turns and extra tool calls from that transcript. n ≥ 3 before promoting 004.
 2. **Product-word invoke** — static contracts pass; beginner “glossary” / “completely change the entry” still need a live chat (skill descriptions remain engineer jargon).
-3. **Missing dummies** — fixture lists t1-api / t3-spec; those folders do not exist yet.
+3. **Missing dummies** — earlier plans named t1-api / t3-spec; those folders stay absent on purpose (fixture lists only t0-cli / t1-nook).
 4. **`/poteto-mode` same turn** — alongside by design; no worktree can prove the agent won’t dual-route. Soft-off is the mute.
 5. **Guidebook + plugin double-load** — cannot catch with pack-check; README already forbids it.
 6. **Re-import** — cache path remains `…/cursormax/ab5e568…`; Unfurnished 1.2.0 is not what live chats load.
