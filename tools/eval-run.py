@@ -2,6 +2,7 @@
 
   python tools/eval-run.py --dummy t1-nook --arm always-cheap --model <slug> --n 3
   python tools/eval-run.py --dummy t1-nook --arm routed --n 3           # no --model = Auto
+  python tools/eval-run.py --dummy t1-nook --arm soft-off --n 3         # same prompt; writes the off knob
   python tools/eval-run.py --phrasings                                  # docs/evals/phrasings.md
   python tools/eval-run.py --holes                                      # docs/evals/holes.md
 
@@ -9,7 +10,8 @@ Each dummy run: copy the dummy to a temp dir, run the agent with this repo as --
 run the dummy's Red command, check the design-keep rule, write one trace file from
 docs/evals/trace-fixture.md. Turns are 1 by construction (one prompt); tool calls are
 counted from stream-json events. claims_without_evidence, screenshot_before_done,
-dev_server_launches, and the EADDRINUSE count are report-only.
+dev_server_launches, the EADDRINUSE count, correction_turns, and final_reply_chars are
+report-only. --arm soft-off writes scratch/unfurnished-off in that temp workspace.
 Jev never scores holes.
 """
 from __future__ import annotations
@@ -29,6 +31,15 @@ from typing import NamedTuple
 ROOT = Path(__file__).resolve().parents[1]
 DUMMIES = ROOT / "docs" / "evals" / "dummies"
 TRACES = ROOT / "docs" / "evals" / "traces"
+ARMS = ("routed", "always-cheap", "always-frontier", "soft-off")
+_RELEASE_DATES = (
+    (dt.date(2026, 8, 16), "1.0.0"),
+    (dt.date(2026, 9, 1), "1.1.0"),
+    (dt.date(2026, 9, 2), "1.2.0"),
+    (dt.date(2026, 9, 2), "1.3.0"),
+    (dt.date(2026, 9, 25), "1.4.0"),
+)
+_PACK_SKILL = re.compile(r"(?:^|/)\.cursor/skills/[^/]+/SKILL\.md$")
 NATIVE = {"Read", "Grep", "Glob", "Shell", "StrReplace", "Write"}
 RED = re.compile(r"^Red:\s*`([^`]+)`", re.M)
 DONE_WORD = re.compile(r"\b(?:works now|done|fixed|verified|passed|pushed|shipped)\b", re.I)
@@ -40,6 +51,7 @@ _TOOL_KEYS = (
     ("writeToolCall", "Write"),
     ("strReplaceToolCall", "StrReplace"),
     ("browserTakeScreenshotToolCall", "browser_take_screenshot"),
+    ("readToolCall", "Read"),
 )
 
 
@@ -149,7 +161,53 @@ def eaddrinuse_count(calls: list[Call]) -> int:
 
 
 def trace_field_names() -> tuple[str, ...]:
-    return ("screenshot_before_done", "dev_server_launches", "EADDRINUSE")
+    return (
+        "claims_without_evidence",
+        "screenshot_before_done",
+        "dev_server_launches",
+        "EADDRINUSE",
+        "correction_turns",
+        "final_reply_chars",
+        "pack_loaded",
+        "pack_version",
+    )
+
+
+def pack_version(when: dt.date | None) -> str:
+    """Latest release on or before when. Two rows on that day, or no row, is unknown."""
+    if type(when) is not dt.date:
+        return "unknown"
+    if sum(day == when for day, _name in _RELEASE_DATES) > 1:
+        return "unknown"
+    found = "unknown"
+    for day, name in _RELEASE_DATES:
+        if day <= when:
+            found = name
+        else:
+            break
+    return found
+
+
+def pack_loaded(calls: list[Call], workspace: Path) -> str:
+    """yes when a Read hit unfurnished-bias or a pack SKILL.md and the off knob is absent."""
+    if (workspace / "scratch" / "unfurnished-off").exists():
+        return "no"
+    for call in calls:
+        if _norm_tool(call.name) != "read":
+            continue
+        path = call.path.replace("\\", "/")
+        if path.endswith("unfurnished-bias.mdc") or _PACK_SKILL.search(path):
+            return "yes"
+    return "no"
+
+
+def seed_workspace(src: Path, dest: Path, arm: str) -> None:
+    shutil.copytree(src, dest)
+    subprocess.run(["git", "init", "-q"], cwd=dest, check=False)
+    if arm == "soft-off":
+        knob = dest / "scratch" / "unfurnished-off"
+        knob.parent.mkdir(parents=True, exist_ok=True)
+        knob.write_text("off\n", encoding="utf-8")
 
 
 def claims_without_evidence(message: str, calls: list[Call]) -> int:
@@ -395,8 +453,7 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
     for i in range(1, n + 1):
         with tempfile.TemporaryDirectory() as d:
             ws = Path(d) / name
-            shutil.copytree(src, ws)
-            subprocess.run(["git", "init", "-q"], cwd=ws, check=False)
+            seed_workspace(src, ws, arm)
             events = run_agent(ws, task, model)
             calls = tool_calls(events)
             extra = [c for c in calls if c[0] not in NATIVE]
@@ -404,10 +461,13 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             after = (ws / "docs" / "design.md").read_text(encoding="utf-8") if design_src.is_file() else ""
             kept = design_kept(before, after, "Coming soon.") if before else True
             parsed = calls_from_events(events)
-            bare_claims = claims_without_evidence(final_message(events), parsed)
+            reply = final_message(events)
+            bare_claims = claims_without_evidence(reply, parsed)
             shot = screenshot_before_done(parsed)
             launches = dev_server_launches(parsed)
             busy = eaddrinuse_count(parsed)
+            loaded = pack_loaded(parsed, ws)
+            version = pack_version(dt.date.today())
         stamp = dt.date.today().isoformat()
         trace = TRACES / f"{stamp}-{name}-{arm}-{i}.md"
         trace.write_text(
@@ -421,6 +481,10 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             f"- screenshot_before_done: {shot}\n"
             f"- dev_server_launches: {launches}\n"
             f"- EADDRINUSE: {busy}\n"
+            "- correction_turns: 0\n"
+            f"- final_reply_chars: {len(reply)}\n"
+            f"- pack_loaded: {loaded}\n"
+            f"- pack_version: {version}\n"
             "- Tokens in / out (optional; skip if the dashboard is missing): skipped\n"
             f"- Notes (one line): headless via tools/eval-run.py; extra={[c[0] for c in extra][:8]}\n",
             encoding="utf-8",
@@ -428,7 +492,8 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
         print(
             f"{trace.name}: success={success} kept={kept} calls={len(calls)} "
             f"extra={len(extra)} claims_without_evidence={bare_claims} "
-            f"screenshot_before_done={shot} dev_server_launches={launches} EADDRINUSE={busy}"
+            f"screenshot_before_done={shot} dev_server_launches={launches} EADDRINUSE={busy} "
+            f"pack_loaded={loaded} pack_version={version}"
         )
 
 
@@ -474,7 +539,7 @@ def run_holes(model: str | None) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dummy", default="t1-nook")
-    ap.add_argument("--arm", default="routed", choices=("routed", "always-cheap", "always-frontier"))
+    ap.add_argument("--arm", default="routed", choices=ARMS)
     ap.add_argument("--model", help="picker slug; omit for Auto (the routed arm)")
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("--phrasings", action="store_true", help="run docs/evals/phrasings.md instead of a dummy")
@@ -662,6 +727,64 @@ class TestVisualAndServerFields(unittest.TestCase):
         self.assertEqual(screenshot_before_done(calls), "yes")
         self.assertEqual(dev_server_launches(calls), 1)
         self.assertEqual(eaddrinuse_count(calls), 1)
+
+
+class TestSoftOffArm(unittest.TestCase):
+    def test_choices_keep_the_existing_arms(self) -> None:
+        self.assertEqual(ARMS, ("routed", "always-cheap", "always-frontier", "soft-off"))
+
+    def test_soft_off_writes_the_knob_and_other_arms_do_not(self) -> None:
+        src = DUMMIES / "t0-cli"
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            seed_workspace(src, root / "off", "soft-off")
+            knob = root / "off" / "scratch" / "unfurnished-off"
+            self.assertTrue(knob.is_file())
+            self.assertEqual(knob.read_text(encoding="utf-8"), "off\n")
+            for arm in ("routed", "always-cheap", "always-frontier"):
+                seed_workspace(src, root / arm, arm)
+                self.assertFalse((root / arm / "scratch" / "unfurnished-off").exists())
+
+
+class TestPackTags(unittest.TestCase):
+    def test_pack_loaded_needs_a_pack_read_and_no_off_file(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            ws = Path(d)
+            bias = Call("Read", path=".cursor/rules/unfurnished-bias.mdc")
+            skill = Call("Read", path=".cursor/skills/verify/SKILL.md")
+            other = Call("Read", path="README.md")
+            self.assertEqual(pack_loaded([bias], ws), "yes")
+            self.assertEqual(pack_loaded([skill], ws), "yes")
+            self.assertEqual(pack_loaded([Call("Read", path=r".cursor\skills\sdd\SKILL.md")], ws), "yes")
+            self.assertEqual(pack_loaded([other], ws), "no")
+            self.assertEqual(pack_loaded([Call("Grep", path=".cursor/rules/unfurnished-bias.mdc")], ws), "no")
+            (ws / "scratch").mkdir()
+            (ws / "scratch" / "unfurnished-off").write_text("off\n", encoding="utf-8")
+            self.assertEqual(pack_loaded([bias, skill], ws), "no")
+
+    def test_read_tool_event_counts_as_pack_loaded(self) -> None:
+        events = [
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "tool_call": {
+                    "readToolCall": {"args": {"path": ".cursor/rules/unfurnished-bias.mdc"}, "result": {}},
+                },
+            }
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(pack_loaded(calls_from_events(events), Path(d)), "yes")
+
+    def test_pack_version_uses_the_release_dates(self) -> None:
+        self.assertEqual(pack_version(None), "unknown")
+        self.assertEqual(pack_version(dt.date(2026, 8, 15)), "unknown")
+        self.assertEqual(pack_version(dt.date(2026, 8, 16)), "1.0.0")
+        self.assertEqual(pack_version(dt.date(2026, 9, 1)), "1.1.0")
+        self.assertEqual(pack_version(dt.date(2026, 9, 2)), "unknown")
+        self.assertEqual(pack_version(dt.date(2026, 9, 3)), "1.3.0")
+        self.assertEqual(pack_version(dt.date(2026, 9, 24)), "1.3.0")
+        self.assertEqual(pack_version(dt.date(2026, 9, 25)), "1.4.0")
+        self.assertEqual(pack_version(dt.date(2026, 10, 19)), "1.4.0")
 
 
 class TestStreamParse(unittest.TestCase):

@@ -26,6 +26,14 @@ Count from the transcript, not from a missing dashboard:
 
 If a usage-dashboard scrape exists, record tokens as a note. Do not block a trace on missing tokens.
 
+## Sample size
+
+At p ≈ 0.46 and n = 100, the 95% margin is about ±10 points. A result inside that margin needs more samples before a decision. No field claim rests on a pattern with fewer than 20 events unless a deterministic fixture backs it (`pack-check`, `--phrasings`, `--holes`, or a dummy Red command).
+
+## Field sessions
+
+Scrapes of desktop transcripts, a judge such as Jev, and a host globalStorage database are Troy-local. They are not pack product. Drop host-injected user lines and wrapper tags before a turn count. Export composer text only: no corpus in this repo, no keys, no tokens, no settings. Skip a workspace database that only repeats prompts already in the transcript. A judge that saw only failed tool output makes an unverified-claim rate an upper bound. Score a hole probe from its RESULT line. Keep any API key in the environment; do not write it into a trace. Do not add a reader of agent transcripts, globalStorage, `state.vscdb`, or workspace databases.
+
 ## Run it
 
 Strings in files are not evidence; `pack-check` only proves the words are there. Runs come from the Cursor CLI, headless, with this repo as the plugin:
@@ -33,6 +41,7 @@ Strings in files are not evidence; `pack-check` only proves the words are there.
 ```bash
 python tools/eval-run.py --dummy t1-nook --arm always-cheap --model <picker slug> --n 3
 python tools/eval-run.py --dummy t1-nook --arm routed --n 3        # Auto
+python tools/eval-run.py --dummy t1-nook --arm soft-off --n 3      # same prompt and model; writes scratch/unfurnished-off
 python tools/eval-run.py --phrasings                               # docs/evals/phrasings.md
 ```
 
