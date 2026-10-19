@@ -6,13 +6,14 @@
   python tools/eval-run.py --phrasings                                  # docs/evals/phrasings.md
   python tools/eval-run.py --holes                                      # docs/evals/holes.md
 
-Each dummy run: copy the dummy to a temp dir, run the agent with this repo as --plugin-dir,
-run the dummy's Red command, check the design-keep rule, write one trace file from
-docs/evals/trace-fixture.md. Turns are 1 by construction (one prompt); tool calls are
-counted from stream-json events. claims_without_evidence, screenshot_before_done,
-dev_server_launches, the EADDRINUSE count, correction_turns, and final_reply_chars are
-report-only. --arm soft-off writes scratch/unfurnished-off in that temp workspace.
-Jev never scores holes.
+Each dummy run: copy the dummy to a temp dir, materialize a temp --plugin-dir with only the
+shipped surface (.cursor/, .cursor-plugin/, AGENTS.md, README.md, docs/decisions/), run the
+agent, run the dummy's Red command, check the design-keep rule, write one trace under
+docs/evals/traces/ (outside that plugin dir). Turns are 1 by construction (one prompt);
+tool totals come from completed stream-json calls. claims_without_evidence,
+screenshot_before_done, dev_server_launches, the EADDRINUSE count, correction_turns,
+final_reply_chars, pack_loaded, and pack_read are report-only. --arm soft-off writes
+scratch/unfurnished-off in that temp workspace. Jev never scores holes.
 """
 from __future__ import annotations
 
@@ -42,14 +43,20 @@ _RELEASE_DATES = (
 _PACK_SKILL = re.compile(r"(?:^|/)\.cursor/skills/[^/]+/SKILL\.md$")
 NATIVE = {"Read", "Grep", "Glob", "Shell", "StrReplace", "Write"}
 RED = re.compile(r"^Red:\s*`([^`]+)`", re.M)
-DONE_WORD = re.compile(r"\b(?:works now|done|fixed|verified|passed|pushed|shipped)\b", re.I)
+DONE_WORD = re.compile(r"\b(?:works now|done(?!-)|fixed|verified|passed|pushed|shipped)\b", re.I)
 PR_URL = re.compile(r"https://github\.com/[^\s/]+/[^\s/]+/pull/\d+")
 _SCRATCH_BULLET = re.compile(r"^`?scratch/(?:tickets/)?`?(?:\s|$)")
+_PLUGIN_ROOT_FILES = ("AGENTS.md", "README.md")
+_PLUGIN_ROOT_DIRS = (".cursor", ".cursor-plugin")
 _TOOL_KEYS = (
     ("shellToolCall", "Shell"),
     ("readLintsToolCall", "ReadLints"),
     ("writeToolCall", "Write"),
     ("strReplaceToolCall", "StrReplace"),
+    ("editToolCall", "StrReplace"),
+    ("deleteToolCall", "Delete"),
+    ("grepToolCall", "Grep"),
+    ("globToolCall", "Glob"),
     ("browserTakeScreenshotToolCall", "browser_take_screenshot"),
     ("readToolCall", "Read"),
 )
@@ -169,6 +176,7 @@ def trace_field_names() -> tuple[str, ...]:
         "correction_turns",
         "final_reply_chars",
         "pack_loaded",
+        "pack_read",
         "pack_version",
     )
 
@@ -188,10 +196,8 @@ def pack_version(when: dt.date | None) -> str:
     return found
 
 
-def pack_loaded(calls: list[Call], workspace: Path) -> str:
-    """yes when a Read hit unfurnished-bias or a pack SKILL.md and the off knob is absent."""
-    if (workspace / "scratch" / "unfurnished-off").exists():
-        return "no"
+def pack_read(calls: list[Call]) -> str:
+    """yes when a Read hit unfurnished-bias or a pack SKILL.md. Ignores the off knob."""
     for call in calls:
         if _norm_tool(call.name) != "read":
             continue
@@ -199,6 +205,13 @@ def pack_loaded(calls: list[Call], workspace: Path) -> str:
         if path.endswith("unfurnished-bias.mdc") or _PACK_SKILL.search(path):
             return "yes"
     return "no"
+
+
+def pack_loaded(calls: list[Call], workspace: Path) -> str:
+    """yes when pack_read is yes and the off knob is absent."""
+    if (workspace / "scratch" / "unfurnished-off").exists():
+        return "no"
+    return pack_read(calls)
 
 
 def seed_workspace(src: Path, dest: Path, arm: str) -> None:
@@ -305,6 +318,17 @@ def _as_int(value: object) -> int | None:
     return None
 
 
+def _unwrap_tool_result(result: object) -> dict:
+    if not isinstance(result, dict):
+        return {}
+    nested = result.get("success")
+    if not isinstance(nested, dict):
+        nested = result.get("failure")
+    if isinstance(nested, dict):
+        return nested
+    return result
+
+
 def _call_from_mapping(name: str, args: object, result: object) -> Call:
     command = ""
     path = ""
@@ -313,12 +337,12 @@ def _call_from_mapping(name: str, args: object, result: object) -> Call:
         path = str(args.get("path") or args.get("file_path") or args.get("filePath") or "")
     exit_code = None
     chunks: list[str] = []
-    if isinstance(result, dict):
-        exit_code = _as_int(result.get("exitCode", result.get("exit_code", result.get("code"))))
-        for key in ("stdout", "output", "content", "stderr"):
-            value = result.get(key)
-            if isinstance(value, str) and value:
-                chunks.append(value)
+    body = _unwrap_tool_result(result)
+    exit_code = _as_int(body.get("exitCode", body.get("exit_code", body.get("code"))))
+    for key in ("stdout", "output", "content", "stderr"):
+        value = body.get(key)
+        if isinstance(value, str) and value:
+            chunks.append(value)
     return Call(name=name, command=command, exit_code=exit_code, output="\n".join(chunks), path=path)
 
 
@@ -335,6 +359,13 @@ def call_from_tool_event(event: dict) -> Call | None:
         if isinstance(block, dict):
             return _call_from_mapping(
                 name,
+                block.get("args") or block.get("input") or {},
+                block.get("result") or {},
+            )
+    for key, block in tool_call.items():
+        if isinstance(block, dict) and key.endswith("ToolCall") and len(key) > len("ToolCall"):
+            return _call_from_mapping(
+                key[: -len("ToolCall")],
                 block.get("args") or block.get("input") or {},
                 block.get("result") or {},
             )
@@ -366,33 +397,70 @@ def calls_from_events(events: list[dict]) -> list[Call]:
     return found
 
 
+def _assistant_text(event: dict) -> str:
+    if event.get("type") != "assistant":
+        return ""
+    message = event.get("message")
+    if isinstance(message, str):
+        return message
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    parts = [
+        part["text"]
+        for part in content
+        if isinstance(part, dict)
+        and part.get("type") in {"text", "output_text"}
+        and isinstance(part.get("text"), str)
+    ]
+    return "".join(parts)
+
+
 def assistant_chunks(events: list[dict]) -> list[str]:
     chunks: list[str] = []
     for event in events:
+        text = _assistant_text(event)
+        if text:
+            chunks.append(text)
         if event.get("type") == "result" and isinstance(event.get("result"), str):
             chunks.append(event["result"])
-        message = event.get("message")
-        if isinstance(message, str) and event.get("type") == "assistant":
-            chunks.append(message)
-        if not isinstance(message, dict):
-            continue
-        content = message.get("content")
-        if isinstance(content, str):
-            chunks.append(content)
-        elif isinstance(content, list):
-            for part in content:
-                if (
-                    isinstance(part, dict)
-                    and part.get("type") in {"text", "output_text"}
-                    and isinstance(part.get("text"), str)
-                ):
-                    chunks.append(part["text"])
     return chunks
 
 
 def final_message(events: list[dict]) -> str:
-    chunks = assistant_chunks(events)
-    return chunks[-1] if chunks else ""
+    """Last type:assistant text; terminal result event only as fallback."""
+    last = ""
+    fallback = ""
+    for event in events:
+        text = _assistant_text(event)
+        if text:
+            last = text
+        if event.get("type") == "result" and isinstance(event.get("result"), str):
+            fallback = event["result"]
+    return last or fallback
+
+
+def materialize_plugin(dest: Path) -> Path:
+    """Copy only the shipped plugin surface so agents cannot Read eval keys via --plugin-dir."""
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in _PLUGIN_ROOT_DIRS:
+        src = ROOT / name
+        if src.is_dir():
+            shutil.copytree(src, dest / name, dirs_exist_ok=True)
+    for name in _PLUGIN_ROOT_FILES:
+        src = ROOT / name
+        if src.is_file():
+            shutil.copy2(src, dest / name)
+    decisions = ROOT / "docs" / "decisions"
+    if decisions.is_dir():
+        out = dest / "docs" / "decisions"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(decisions, out, dirs_exist_ok=True)
+    return dest
 
 
 def agent_bin() -> str:
@@ -402,9 +470,16 @@ def agent_bin() -> str:
     return exe
 
 
-def run_agent(workspace: Path, prompt: str, model: str | None, mode: str | None = None) -> list[dict]:
+def run_agent(
+    workspace: Path,
+    prompt: str,
+    model: str | None,
+    mode: str | None = None,
+    plugin_dir: Path | None = None,
+) -> list[dict]:
+    plugin = plugin_dir if plugin_dir is not None else ROOT
     cmd = [agent_bin(), "-p", "--force", "--trust", "--output-format", "stream-json",
-           "--workspace", str(workspace), "--plugin-dir", str(ROOT)]
+           "--workspace", str(workspace), "--plugin-dir", str(plugin)]
     if model:
         cmd += ["--model", model]
     if mode:
@@ -452,21 +527,23 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
     TRACES.mkdir(parents=True, exist_ok=True)
     for i in range(1, n + 1):
         with tempfile.TemporaryDirectory() as d:
-            ws = Path(d) / name
+            root = Path(d)
+            ws = root / name
+            plugin = materialize_plugin(root / "plugin")
             seed_workspace(src, ws, arm)
-            events = run_agent(ws, task, model)
-            calls = tool_calls(events)
-            extra = [c for c in calls if c[0] not in NATIVE]
+            events = run_agent(ws, task, model, plugin_dir=plugin)
+            parsed = calls_from_events(events)
+            extra = [c for c in parsed if c.name not in NATIVE]
             success = subprocess.run(red.group(1), shell=True, cwd=ws).returncode == 0
             after = (ws / "docs" / "design.md").read_text(encoding="utf-8") if design_src.is_file() else ""
             kept = design_kept(before, after, "Coming soon.") if before else True
-            parsed = calls_from_events(events)
             reply = final_message(events)
             bare_claims = claims_without_evidence(reply, parsed)
             shot = screenshot_before_done(parsed)
             launches = dev_server_launches(parsed)
             busy = eaddrinuse_count(parsed)
             loaded = pack_loaded(parsed, ws)
+            read = pack_read(parsed)
             version = pack_version(dt.date.today())
         stamp = dt.date.today().isoformat()
         trace = TRACES / f"{stamp}-{name}-{arm}-{i}.md"
@@ -476,7 +553,7 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             "- Cost class: fill from the picker\n"
             f"- Success: {'yes' if success and kept else 'no'} (Red exit {'0' if success else 'non-zero'}; design keep {'ok' if kept else 'FAILED'})\n"
             "- User turns until accepted: 1 (headless, one prompt)\n"
-            f"- Tool calls (total): {len(calls)}\n- Extra tool calls (not Grep/Glob/Read or the named native): {len(extra)}\n"
+            f"- Tool calls (total): {len(parsed)}\n- Extra tool calls (not Grep/Glob/Read or the named native): {len(extra)}\n"
             f"- claims_without_evidence: {bare_claims}\n"
             f"- screenshot_before_done: {shot}\n"
             f"- dev_server_launches: {launches}\n"
@@ -484,16 +561,17 @@ def run_dummy(name: str, arm: str, model: str | None, n: int) -> None:
             "- correction_turns: 0\n"
             f"- final_reply_chars: {len(reply)}\n"
             f"- pack_loaded: {loaded}\n"
+            f"- pack_read: {read}\n"
             f"- pack_version: {version}\n"
             "- Tokens in / out (optional; skip if the dashboard is missing): skipped\n"
-            f"- Notes (one line): headless via tools/eval-run.py; extra={[c[0] for c in extra][:8]}\n",
+            f"- Notes (one line): headless via tools/eval-run.py; extra={[c.name for c in extra][:8]}\n",
             encoding="utf-8",
         )
         print(
-            f"{trace.name}: success={success} kept={kept} calls={len(calls)} "
+            f"{trace.name}: success={success} kept={kept} calls={len(parsed)} "
             f"extra={len(extra)} claims_without_evidence={bare_claims} "
             f"screenshot_before_done={shot} dev_server_launches={launches} EADDRINUSE={busy} "
-            f"pack_loaded={loaded} pack_version={version}"
+            f"pack_loaded={loaded} pack_read={read} pack_version={version}"
         )
 
 
@@ -505,11 +583,18 @@ def run_phrasings(model: str | None) -> int:
             rows.append(cells)
     failures = 0
     with tempfile.TemporaryDirectory() as d:
-        ws = Path(d) / "t1-nook"
+        root = Path(d)
+        ws = root / "t1-nook"
+        plugin = materialize_plugin(root / "plugin")
         shutil.copytree(DUMMIES / "t1-nook", ws)
         for phrase, expected in rows:
-            events = run_agent(ws, phrase, model, mode="plan")
-            read = {m.group(1) for _, p in tool_calls(events) for m in [re.search(r"skills[\\/]([^\\/]+)[\\/]SKILL\.md", p)] if m}
+            events = run_agent(ws, phrase, model, mode="plan", plugin_dir=plugin)
+            read = {
+                m.group(1)
+                for call in calls_from_events(events)
+                for m in [re.search(r"skills[\\/]([^\\/]+)[\\/]SKILL\.md", call.path)]
+                if m
+            }
             ok = (not read) if expected == "none" else (expected in read)
             failures += not ok
             print(f"{'PASS' if ok else 'FAIL'}  {expected:<14} read={sorted(read) or '-'}  <- {phrase}")
@@ -523,15 +608,17 @@ def run_holes(model: str | None) -> int:
         sys.exit("docs/evals/holes.md has no hole rows")
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     failures = 0
-    for row in rows:
-        with tempfile.TemporaryDirectory() as d:
-            ws = Path(d) / "hole"
-            ws.mkdir()
-            (ws / "AGENTS.md").write_text(agents, encoding="utf-8")
-            events = run_agent(ws, row["phrase"], model)
-            ok, why = score_hole("\n".join(assistant_chunks(events)), ws, row["result"], row["filesystem"])
-        failures += not ok
-        print(f"{'PASS' if ok else 'FAIL'}  {row['id']}" + ("" if ok else f"  {why}"))
+    with tempfile.TemporaryDirectory() as plugin_tmp:
+        plugin = materialize_plugin(Path(plugin_tmp) / "plugin")
+        for row in rows:
+            with tempfile.TemporaryDirectory() as d:
+                ws = Path(d) / "hole"
+                ws.mkdir()
+                (ws / "AGENTS.md").write_text(agents, encoding="utf-8")
+                events = run_agent(ws, row["phrase"], model, plugin_dir=plugin)
+                ok, why = score_hole("\n".join(assistant_chunks(events)), ws, row["result"], row["filesystem"])
+            failures += not ok
+            print(f"{'PASS' if ok else 'FAIL'}  {row['id']}" + ("" if ok else f"  {why}"))
     print(f"{len(rows) - failures}/{len(rows)} holes passed")
     return 1 if failures else 0
 
@@ -573,6 +660,7 @@ class TestClaimsWithoutEvidence(unittest.TestCase):
         self.assertEqual(claims_without_evidence("Don't claim done", []), 0)
         self.assertEqual(claims_without_evidence("done, not shipped", []), 1)
         self.assertEqual(claims_without_evidence("The work is unverified.", []), 0)
+        self.assertEqual(claims_without_evidence("test already pins the done-line", []), 0)
 
     def test_qualifying_call_after_last_write_clears_the_count(self) -> None:
         writes = [Call("StrReplace"), Call("Shell", "pytest", 0, "ok")]
@@ -761,6 +849,7 @@ class TestPackTags(unittest.TestCase):
             (ws / "scratch").mkdir()
             (ws / "scratch" / "unfurnished-off").write_text("off\n", encoding="utf-8")
             self.assertEqual(pack_loaded([bias, skill], ws), "no")
+            self.assertEqual(pack_read([bias, skill]), "yes")
 
     def test_read_tool_event_counts_as_pack_loaded(self) -> None:
         events = [
@@ -773,7 +862,9 @@ class TestPackTags(unittest.TestCase):
             }
         ]
         with tempfile.TemporaryDirectory() as d:
-            self.assertEqual(pack_loaded(calls_from_events(events), Path(d)), "yes")
+            calls = calls_from_events(events)
+            self.assertEqual(pack_loaded(calls, Path(d)), "yes")
+            self.assertEqual(pack_read(calls), "yes")
 
     def test_pack_version_uses_the_release_dates(self) -> None:
         self.assertEqual(pack_version(None), "unknown")
@@ -819,6 +910,128 @@ class TestStreamParse(unittest.TestCase):
         calls = calls_from_events(events)
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0].exit_code, 0)
+
+    def test_cli_shapes_unwrap_edit_and_last_assistant(self) -> None:
+        events = [
+            {
+                "type": "tool_call",
+                "subtype": "started",
+                "call_id": "call-1",
+                "tool_call": {"readToolCall": {"args": {"path": "/w/a.md"}}},
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "call_id": "call-1",
+                "tool_call": {
+                    "readToolCall": {
+                        "args": {"path": "/w/a.md"},
+                        "result": {"success": {"content": "ok"}},
+                    }
+                },
+            },
+            {
+                "type": "tool_call",
+                "subtype": "started",
+                "call_id": "call-2",
+                "tool_call": {"editToolCall": {"args": {"path": "/w/page.py"}}},
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "call_id": "call-2",
+                "tool_call": {
+                    "editToolCall": {
+                        "args": {"path": "/w/page.py"},
+                        "result": {"success": {}},
+                    }
+                },
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "call_id": "call-3",
+                "tool_call": {
+                    "shellToolCall": {
+                        "args": {"command": "python3 -m unittest test_page.py"},
+                        "result": {
+                            "success": {
+                                "command": "python3 -m unittest test_page.py",
+                                "exitCode": 0,
+                                "stdout": "OK\n",
+                                "stderr": "",
+                            }
+                        },
+                    }
+                },
+            },
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "call_id": "call-4",
+                "tool_call": {
+                    "getMcpToolsToolCall": {"args": {}, "result": {"success": {}}},
+                },
+            },
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "I'll orient first."}]},
+            },
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [{"type": "text", "text": "Green: tests passed. The done-line held."}]
+                },
+            },
+            {
+                "type": "result",
+                "subtype": "success",
+                "result": "I'll orient first.Green: tests passed. The done-line held.",
+            },
+        ]
+        calls = calls_from_events(events)
+        self.assertEqual([c.name for c in calls], ["Read", "StrReplace", "Shell", "getMcpTools"])
+        self.assertEqual(calls[2].exit_code, 0)
+        self.assertIn("OK", calls[2].output)
+        self.assertEqual(len(calls), 4)
+        extra = [c for c in calls if c.name not in NATIVE]
+        self.assertEqual([c.name for c in extra], ["getMcpTools"])
+        reply = final_message(events)
+        self.assertEqual(reply, "Green: tests passed. The done-line held.")
+        self.assertEqual(claims_without_evidence(reply, calls), 0)
+        fail_events = [
+            {
+                "type": "tool_call",
+                "subtype": "completed",
+                "tool_call": {
+                    "shellToolCall": {
+                        "args": {"command": "python -m unittest"},
+                        "result": {
+                            "failure": {
+                                "exitCode": 127,
+                                "stderr": "python: command not found\n",
+                            }
+                        },
+                    }
+                },
+            }
+        ]
+        failed = calls_from_events(fail_events)[0]
+        self.assertEqual(failed.exit_code, 127)
+        self.assertIn("command not found", failed.output)
+
+
+class TestPluginIsolation(unittest.TestCase):
+    def test_materialize_plugin_omits_eval_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            plugin = materialize_plugin(Path(d) / "plugin")
+            self.assertTrue((plugin / ".cursor" / "skills" / "unfurnished" / "SKILL.md").is_file())
+            self.assertTrue((plugin / "docs" / "decisions").is_dir())
+            self.assertTrue((plugin / "AGENTS.md").is_file())
+            self.assertFalse((plugin / "docs" / "evals").exists())
+            self.assertFalse((plugin / "docs" / "eval.md").exists())
+            self.assertFalse((plugin / "tools").exists())
+            self.assertFalse((plugin / "docs" / "evals" / "holes.md").exists())
 
 
 if __name__ == "__main__":
