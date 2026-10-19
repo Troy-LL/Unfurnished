@@ -45,6 +45,14 @@ python3 tools/eval-run.py --dummy t1-nook --arm soft-off --n 3      # same promp
 python3 tools/eval-run.py --phrasings                               # docs/evals/phrasings.md
 ```
 
-Each dummy run copies the dummy to a temp dir, materializes a temp `--plugin-dir` with only the shipped surface (`.cursor/`, `.cursor-plugin/`, `AGENTS.md`, `README.md`, `docs/decisions/`), runs the agent once, runs the Red command, checks the design-keep rule, and writes one trace to `docs/evals/traces/` outside that plugin dir (turns = 1 by construction; completed stream-json calls only). Soft-off traces report `pack_loaded` and `pack_read` separately. The 004 gate reads those traces.
+Each dummy run copies the fixture into a temp workspace (not `EVAL-TASK.md`), materializes a temp `--plugin-dir` with only the shipped surface (`.cursor/`, `.cursor-plugin/`, `AGENTS.md`, `README.md`, `docs/decisions/`), runs the agent once with the task as the CLI prompt, runs the Red command, checks the design-keep rule, and writes one trace to `docs/evals/traces/` outside that plugin dir (turns = 1 by construction; completed stream-json calls only). Soft-off traces report `pack_loaded` and `pack_read` separately. The 004 gate reads those traces.
+
+### Soft-off on the host
+
+`/unfurnished off` writes `scratch/unfurnished-off`. Bias and the unfurnished skill still stop pack seats (no sdd/verify/…, no seating or minting `docs/design.md` / `AGENTS.md`). Customize and the CLI may still **list** pack skills while that knob is on — the host picker is outside this pack. Score soft-off with `pack_read` (did the agent Read pack text?) plus the knob file; do not treat `pack_loaded` alone as “skills hidden.” This guidebook does not invent a host API that hides the list.
+
+### Answer keys stay out of the agent workspace
+
+`--plugin-dir` is a temp copy without `docs/evals/`, `docs/eval.md`, or `tools/`. Hole workspaces get only this repo’s `AGENTS.md` (plus what the agent writes). Dummy and phrasing workspaces get the fixture files, not `EVAL-TASK.md`, `docs/evals/holes.md`, or traces. The harness reads those keys from the checkout; the agent prompt carries the task text.
 
 [`docs/evals/phrasings.md`](evals/phrasings.md) is the routing fixture: plain asks → the skill that should pull. After [006](decisions/006-kernel-not-slot-map.md) the descriptions are the router, so a phrasing that misses is a description bug. A row under 2/3 means rewrite that skill's `description:`, not the phrase.

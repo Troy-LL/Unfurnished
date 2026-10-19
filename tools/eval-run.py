@@ -6,14 +6,16 @@
   python tools/eval-run.py --phrasings                                  # docs/evals/phrasings.md
   python tools/eval-run.py --holes                                      # docs/evals/holes.md
 
-Each dummy run: copy the dummy to a temp dir, materialize a temp --plugin-dir with only the
-shipped surface (.cursor/, .cursor-plugin/, AGENTS.md, README.md, docs/decisions/), run the
-agent, run the dummy's Red command, check the design-keep rule, write one trace under
-docs/evals/traces/ (outside that plugin dir). Turns are 1 by construction (one prompt);
-tool totals come from completed stream-json calls. claims_without_evidence,
-screenshot_before_done, dev_server_launches, the EADDRINUSE count, correction_turns,
-final_reply_chars, pack_loaded, and pack_read are report-only. --arm soft-off writes
-scratch/unfurnished-off in that temp workspace. Jev never scores holes.
+Each dummy run: copy the fixture (not EVAL-TASK.md) to a temp workspace, materialize a temp
+--plugin-dir with only the shipped surface (.cursor/, .cursor-plugin/, AGENTS.md, README.md,
+docs/decisions/), run the agent with the task as the CLI prompt, run the dummy's Red
+command, check the design-keep rule, write one trace under docs/evals/traces/ (outside that
+plugin dir). Hole workspaces get AGENTS.md only. Answer keys (holes.md, EVAL-TASK.md, traces)
+stay in the checkout. Turns are 1 by construction (one prompt); tool totals come from
+completed stream-json calls. claims_without_evidence, screenshot_before_done,
+dev_server_launches, the EADDRINUSE count, correction_turns, final_reply_chars, pack_loaded,
+and pack_read are report-only. --arm soft-off writes scratch/unfurnished-off in that temp
+workspace. Jev never scores holes.
 """
 from __future__ import annotations
 
@@ -214,13 +216,36 @@ def pack_loaded(calls: list[Call], workspace: Path) -> str:
     return pack_read(calls)
 
 
+def _strip_eval_keys(workspace: Path) -> None:
+    """Drop answer-key paths the agent must not Read from the temp workspace."""
+    for rel in (
+        "EVAL-TASK.md",
+        "docs/evals/holes.md",
+        "docs/evals/traces",
+        "docs/eval.md",
+    ):
+        path = workspace / rel
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
+
+
 def seed_workspace(src: Path, dest: Path, arm: str) -> None:
     shutil.copytree(src, dest)
+    _strip_eval_keys(dest)
     subprocess.run(["git", "init", "-q"], cwd=dest, check=False)
     if arm == "soft-off":
         knob = dest / "scratch" / "unfurnished-off"
         knob.parent.mkdir(parents=True, exist_ok=True)
         knob.write_text("off\n", encoding="utf-8")
+
+
+def seed_hole_workspace(dest: Path, agents: str) -> None:
+    """Hole runs: AGENTS.md only. holes.md and other keys stay in the checkout."""
+    dest.mkdir(parents=True, exist_ok=True)
+    (dest / "AGENTS.md").write_text(agents, encoding="utf-8")
+    _strip_eval_keys(dest)
 
 
 def claims_without_evidence(message: str, calls: list[Call]) -> int:
@@ -587,6 +612,7 @@ def run_phrasings(model: str | None) -> int:
         ws = root / "t1-nook"
         plugin = materialize_plugin(root / "plugin")
         shutil.copytree(DUMMIES / "t1-nook", ws)
+        _strip_eval_keys(ws)
         for phrase, expected in rows:
             events = run_agent(ws, phrase, model, mode="plan", plugin_dir=plugin)
             read = {
@@ -613,8 +639,7 @@ def run_holes(model: str | None) -> int:
         for row in rows:
             with tempfile.TemporaryDirectory() as d:
                 ws = Path(d) / "hole"
-                ws.mkdir()
-                (ws / "AGENTS.md").write_text(agents, encoding="utf-8")
+                seed_hole_workspace(ws, agents)
                 events = run_agent(ws, row["phrase"], model, plugin_dir=plugin)
                 ok, why = score_hole("\n".join(assistant_chunks(events)), ws, row["result"], row["filesystem"])
             failures += not ok
@@ -1032,6 +1057,29 @@ class TestPluginIsolation(unittest.TestCase):
             self.assertFalse((plugin / "docs" / "eval.md").exists())
             self.assertFalse((plugin / "tools").exists())
             self.assertFalse((plugin / "docs" / "evals" / "holes.md").exists())
+
+    def test_seed_workspace_omits_eval_task_and_keys(self) -> None:
+        src = DUMMIES / "t1-nook"
+        self.assertTrue((src / "EVAL-TASK.md").is_file())
+        with tempfile.TemporaryDirectory() as d:
+            dest = Path(d) / "t1-nook"
+            seed_workspace(src, dest, "routed")
+            self.assertTrue((dest / "page.py").is_file())
+            self.assertTrue((dest / "docs" / "design.md").is_file())
+            self.assertFalse((dest / "EVAL-TASK.md").exists())
+            self.assertFalse((dest / "docs" / "evals" / "holes.md").exists())
+            self.assertFalse((dest / "docs" / "evals" / "traces").exists())
+            self.assertFalse((dest / "docs" / "eval.md").exists())
+
+    def test_seed_hole_workspace_is_agents_only(self) -> None:
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as d:
+            ws = Path(d) / "hole"
+            seed_hole_workspace(ws, agents)
+            names = sorted(p.name for p in ws.iterdir())
+            self.assertEqual(names, ["AGENTS.md"])
+            self.assertFalse((ws / "docs" / "evals" / "holes.md").exists())
+            self.assertFalse((ws / "EVAL-TASK.md").exists())
 
 
 if __name__ == "__main__":

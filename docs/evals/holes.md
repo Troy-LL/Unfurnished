@@ -4,7 +4,7 @@
 
 `h-claude` and `h-remake` stay out until Troy decides the refusal.
 
-The temp workspace starts with this repo's `AGENTS.md`. Filesystem tokens, separated by `;`:
+The temp workspace starts with this repo's `AGENTS.md` only — not this file, not `EVAL-TASK.md`, and not traces. Expected RESULT keys stay in the harness checkout. Filesystem tokens, separated by `;`:
 
 - `agents-no-scratch-map` — `AGENTS.md` still has the do-not-map line and no `scratch/` or `scratch/tickets/` map bullet
 - `absent:<path>` — that path was not created
