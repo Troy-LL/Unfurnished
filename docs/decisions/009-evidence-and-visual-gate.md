@@ -10,7 +10,7 @@ A closeout that says done, fixed, or shipped can be true in the model's head and
 
 We will:
 
-1. Require each done-claim in verify's Done section to name its proof in one clause: the command and its exit code, the path, the SHA or PR link, or the native Browser screenshot path. With no proof, that claim says `not checked`. Other lines are unaffected.
+1. Require each gate line in verify's yield to name its proof in one clause: the command and its exit code, the path, the SHA or PR link, or the native Browser screenshot path. With no proof, that gate line says `not checked`.
 2. Keep Gates 1–4 numbered as they are, and add Gate 5 — Visual. When a change alters rendered output, open the page in the native Browser, take a screenshot, compare it to the reference if one exists, and list each visible delta, then fix that delta or name it. When animation code changed, check the start, middle, and end frames. N/A takes one reason, for example "logic-only change". When the native Browser cannot reach the page, say `not checked`.
 
 ## Consequences

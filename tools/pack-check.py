@@ -610,8 +610,21 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "the path" in done.lower()
             and "sha or pr" in done.lower()
             and "native browser screenshot" in done.lower()
-            and "`not checked`" in done,
-            "verify Done names command+exit, path, SHA or PR, or native Browser screenshot, or says not checked",
+            and "`not checked`" in done
+            and "gate line" in done.lower()
+            and "other lines are unaffected" not in done.lower(),
+            "verify Done: every gate line names command+exit, path, SHA or PR, or native Browser screenshot, or says not checked",
+        )
+    )
+    rows.append(
+        check(
+            "bias-soft-off-no-seat",
+            ("unfurnished-off" in bias and "cursormax-off" in bias)
+            and "docs/design.md" in bias
+            and "AGENTS.md" in bias
+            and "do not seat" in bias.lower()
+            and "do not mint" in bias.lower(),
+            "soft-off forbids seating or minting design.md and AGENTS.md",
         )
     )
     rows.append(
@@ -671,10 +684,14 @@ def run_checks(*, strict_install: bool) -> list[dict]:
             and "second instance of the same server" in verify_lower
             and "several different services" in verify_lower
             and "changed string or a new build time" in verify_lower
-            and "name the url left running, or stop what you started" in verify_lower
             and "tmux-backed shells on cloud" in verify_lower
+            and "npm run dev" in verify_lower
+            and ("ss -ltn" in verify_lower or "curl" in verify_lower)
+            and "do not chain" in verify_lower
+            and "`reused`" in verify
+            and "`stopped`" in verify
             and "one port" not in verify_lower,
-            "Gate 4 reuses this project's server and names the URL or stops it",
+            "Gate 4 port-checks before start, reuses or stops, and yield says reused or stopped",
         )
     )
     rows.append(
